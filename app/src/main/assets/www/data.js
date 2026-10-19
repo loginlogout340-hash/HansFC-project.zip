@@ -17,7 +17,7 @@ HFC.NATIONS = [
   ['Morocco', '🇲🇦', 'na'], ['Algeria', '🇩🇿', 'na'], ['Egypt', '🇪🇬', 'na'], ['Tunisia', '🇹🇳', 'na'],
   ['Brazil', '🇧🇷', 'la'], ['Argentina', '🇦🇷', 'la'], ['Colombia', '🇨🇴', 'la'], ['Uruguay', '🇺🇾', 'la'], ['Spain', '🇪🇸', 'la'], ['Portugal', '🇵🇹', 'la'], ['Mexico', '🇲🇽', 'la'],
   ['France', '🇫🇷', 'eu'], ['Germany', '🇩🇪', 'eu'], ['Italy', '🇮🇹', 'eu'], ['Netherlands', '🇳🇱', 'eu'], ['Norway', '🇳🇴', 'eu'], ['Croatia', '🇭🇷', 'eu'], ['Poland', '🇵🇱', 'eu'],
-  ['England', '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'uk'], ['Scotland', '🏴󠁧󠁢󠁳󠁣󠁴󠁿', 'uk'], ['Japan', '🇯🇵', 'as'], ['South Korea', '🇰🇷', 'as'],
+  ['England', '🇬🇧', 'uk'], ['Scotland', '🇬🇧', 'uk'], ['Japan', '🇯🇵', 'as'], ['South Korea', '🇰🇷', 'as'],
 ];
 HFC.CLUBS = [
   ['Harbor Rovers', '#1d6fb8'], ['Northgate United', '#c0392b'], ['Atlas City', '#7fb2e5'], ['Sunport FC', '#f2a900'], ['Riverside Athletic', '#2e8b57'],

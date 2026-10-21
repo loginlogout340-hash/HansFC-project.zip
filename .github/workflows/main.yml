@@ -1,0 +1,54 @@
+name: Build HANS FC APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Arrange files into the Android project
+        run: |
+          set -e
+          W=app/src/main/assets/www; J=app/src/main/java/com/hans/fc; R=app/src/main/res
+          mkdir -p $W $J $R/drawable $R/mipmap-anydpi-v26 $R/values
+          [ -f app-build.gradle ] && cp app-build.gradle app/build.gradle
+          [ -f AndroidManifest.xml ] && cp AndroidManifest.xml app/src/main/AndroidManifest.xml
+          for f in index.html style.css app.js art.js data.js engine.js extras.js world.js; do [ -f $f ] && cp $f $W/$f; done
+          [ -f MainActivity.java ] && cp MainActivity.java $J/MainActivity.java
+          [ -f ic_fg.xml ] && cp ic_fg.xml $R/drawable/ic_fg.xml
+          [ -f ic_launcher.xml ] && cp ic_launcher.xml $R/mipmap-anydpi-v26/ic_launcher.xml
+          for f in colors.xml styles.xml; do [ -f $f ] && cp $f $R/values/$f; done
+          find app -type f
+
+      - name: Build APK
+        run: gradle assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk HansFC.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: HansFC-apk
+          path: HansFC.apk
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "v2.1.${{ github.run_number }}" HansFC.apk --title "HANS FC v2.1.${{ github.run_number }}" --notes "Download HansFC.apk on your phone and install it."

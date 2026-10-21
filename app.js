@@ -173,10 +173,11 @@
   /* ---------- inbox ---------- */
   function viewInbox() {
     S.unread = 0;
+    var exp = H.userCards(G).filter(function (p) { return p.ct <= 1; }).map(function (p) { return '<div class="msg off" data-act="pl" data-id="' + p.id + '"><b>⚠ CONTRACT</b> ' + esc(p.n) + ' is out of contract at the end of this season. Renew or lose him.</div>'; }).join('');
     var off = S.offers.map(function (o) { var p = G.P[o.pid]; return p ? '<div class="msg off" data-act="pl" data-id="' + p.id + '"><b>📩 OFFER</b> ' + esc(cname(o.from)) + ' bid ' + fm(o.fee) + ' for ' + esc(p.n) + '</div>' : ''; }).join('');
     var items = S.news.map(function (n) { return '<div class="msg ' + n.k + '"><small>' + (n.w ? 'Week ' + n.w + ' · ' : '') + H.yearName(n.y) + '</small>' + esc(n.t) + '</div>'; }).join('');
     setTimeout(chrome, 0);
-    return '<h2>INBOX</h2>' + off + (items || '<div class="darkbox mut">No messages yet.</div>');
+    return '<h2>INBOX</h2>' + exp + off + (items || '<div class="darkbox mut">No messages yet.</div>');
   }
 
   /* ---------- squad ---------- */
@@ -196,14 +197,14 @@
     var slots = f.map(function (s, i) {
       var r = e.rows[i], c = r.card, chem = '';
       if (c) chem = '<div class="chem">' + [1, 2, 3].map(function (k) { return '<i class="' + (r.chem >= k ? 'on' : '') + '"></i>'; }).join('') + '</div>';
-      return '<div class="slot" data-act="slot" data-v="' + i + '" style="left:' + s[1] + '%;top:' + s[2] + '%">' + cardHTML(c, { ovr: c ? r.eff : '', pos: s[0], pen: c && r.pen > 0 }) + chem + '</div>';
+      return '<div class="slot" data-act="slot" data-v="' + i + '" style="left:' + s[1] + '%;top:' + s[2] + '%">' + cardHTML(c, { ovr: c ? r.eff : '', pos: s[0], pen: c && r.pen > 0 }) + chem + (c ? '<i class="suit ' + (r.pen === 0 ? 'g' : r.pen <= 8 ? 'a' : 'r') + '"></i>' : '') + '</div>';
     }).join('');
     var bench = S.bench.map(function (id, i) { return '<div data-act="bslot" data-v="' + i + '">' + cardHTML(G.P[id]) + '</div>'; }).join('');
     for (var k = S.bench.length; k < 9; k++) bench += '<div data-act="bslot" data-v="' + k + '">' + cardHTML(null, { pos: 'SUB' }) + '</div>';
     return '<div class="row" style="margin:8px 0"><div class="sp"><b style="font-size:20px">' + e.vector.rating + '</b> <span class="mut">rating</span> &nbsp; <b style="font-size:20px">' + e.chemistry + '%</b> <span class="mut">chemistry</span></div><button class="btn sm ghost" data-act="auto">AUTO PICK</button></div>' +
       '<div class="seg" style="overflow-x:auto">' + Object.keys(H.FORMATIONS).map(function (k) { return '<button data-act="form" data-v="' + k + '" class="' + (k === S.formation ? 'on' : '') + '" style="min-width:64px">' + k + '</button>'; }).join('') + '</div>' +
       '<div class="pitch">' + slots + '</div><h3>Substitutes (5 can come on)</h3><div class="bench">' + bench + '</div>' +
-      '<p class="mut" style="font-size:12px">Red border = out of position. Dots under a card = team spirit from neighbours of the same nation. Red dot = injured, amber = tired, black = banned.</p>';
+      '<p class="mut" style="font-size:12px">Red border = out of position. Circle on a card: green = natural position, amber = close, red = poor fit. Dots under a card = team spirit from neighbours of the same nation. Red dot = injured, amber = tired, black = banned.</p>';
   }
   function tacticsView() {
     var seg = function (key, arr, label) { return '<div class="mut" style="font-size:12px;margin:8px 0 3px">' + label + '</div><div class="seg">' + arr.map(function (v) { return '<button data-act="tac" data-k="' + key + '" data-v="' + v + '" class="' + (S[key] === v ? 'on' : '') + '">' + v[0].toUpperCase() + v.slice(1) + '</button>'; }).join('') + '</div>'; };
@@ -222,11 +223,11 @@
     var list = all.filter(function (p) { return sqFilter === 'all' || (sqFilter === 'u21' ? p.a <= 21 : first.indexOf(p.id) >= 0); });
     if (!list.length) return '<div class="darkbox mut">No players here.</div>';
     return '<div class="sqlist">' + list.map(function (p) {
-      var sh = H.sharpness(p), inXI = S.slots.indexOf(p.id) >= 0, avgR = p.rn ? (p.rs / p.rn) : 0;
+      var sh = H.sharpness(p), inXI = S.slots.indexOf(p.id) >= 0, avgR = p.rn ? (p.rs / p.rn) : 0, tr = inXI ? 1 : (first.indexOf(p.id) >= 0 || S.bench.indexOf(p.id) >= 0) ? 2 : 3;
       return '<div class="sq" data-act="pl" data-id="' + p.id + '"><div class="sq1"><div class="sqn"><b>' + nums[p.id] + '</b><span class="ptag ' + POSC[H.GROUP[p.pos]] + '">' + p.pos + '</span></div><div class="sqf">' + face(p, 72) + '</div>' +
         '<div class="sqm"><b class="nmx">' + esc(p.n.split(' ')[0].charAt(0) + '.' + last(p.n).toUpperCase()) + '</b><small>' + p.a + ', ' + esc(p.nat) + '</small><div class="shp"><div class="bar3"><i class="' + sh[1] + '" style="width:' + Math.max(8, p.ft) + '%"></i></div><span>⚡ ' + (p.inj ? 'Injured (' + p.inj + 'w)' : p.sus ? 'Suspended' : sh[0]) + '</span></div></div>' +
         '<div class="sqr"><span class="mood">' + H.mood(p) + '</span><span class="gold">' + p.o + '</span></div></div>' +
-        '<div class="sq2"><span class="phl">' + (inXI ? 'XI' : S.bench.indexOf(p.id) >= 0 ? 'SUB' : '') + '</span><b>P' + p.ap + '</b><span>⚽ ' + p.g + '</span><span>🅰 ' + p.as + '</span><span class="yc">' + (p.yc ? p.yc : 0) + '</span><span class="rc">' + (p.sus ? 1 : 0) + '</span><span class="avr ' + (avgR >= 7 ? 'hi' : avgR >= 6.3 ? 'mid' : avgR ? 'lo' : '') + '">' + (avgR ? avgR.toFixed(2) : '-') + '</span></div></div>';
+        '<div class="sq2"><span class="phl tier t' + tr + '">' + (tr === 1 ? 'TIER 1 · XI' : tr === 2 ? 'TIER 2 · BACKUP' : p.a <= 21 ? 'TIER 3 · YOUTH' : 'TIER 3 · RESERVE') + '</span><b>P' + p.ap + '</b><span>⚽ ' + p.g + '</span><span>🅰 ' + p.as + '</span><span class="yc">' + (p.yc ? p.yc : 0) + '</span><span class="rc">' + (p.sus ? 1 : 0) + '</span><span class="avr ' + (avgR >= 7 ? 'hi' : avgR >= 6.3 ? 'mid' : avgR ? 'lo' : '') + '">' + (avgR ? avgR.toFixed(2) : '-') + '</span></div></div>';
     }).join('') + '</div>';
   }
   function openPicker(kind, idx) {

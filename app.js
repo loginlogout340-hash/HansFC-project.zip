@@ -1854,7 +1854,218 @@
     var ob = window.__back; window.__back = function () { if (ov) { shut(); return true; } return ob ? ob() : false; };
     window.__hfcV7 = { role: role, pstyle: pstyle, planFit: planFit, bestPlan: bestPlan, ver: VER };
   } catch (err) { if (window.console) console.error('HANS FC 3.4 add-on failed', err); }
+})();/* ===== HANS FC 3.5.0 add-on: AUTO PLAYER PHOTOS, SLOWER AGEING FOR 27+, MORE AWARDS. PASTE AT THE VERY END of app.js, BELOW the 3.4.0 block. Do NOT select all. ===== */
+(function () {
+  try {
+    var css = '.v8bg{position:fixed;inset:0;z-index:98;background:#000d;display:grid;place-items:center;padding:12px}.v8box{width:100%;max-width:440px;max-height:90vh;overflow-y:auto;background:#10244a;color:#fff;border:2px solid #2f4fa0;border-radius:10px;padding:14px;font-size:14px;line-height:1.4}.v8box h3{margin:0 0 8px;font-size:17px}.v8b{display:block;width:100%;margin-top:8px;padding:10px;border:0;border-radius:6px;background:#2f6bff;color:#fff;font-weight:700;font-size:14px}.v8b.g{background:#2a3d66}.v8b.r{background:#a02a3a}.v8st{background:#0b1a38;border:1px solid #2f4fa0;border-radius:8px;padding:8px 10px;margin:8px 0;font-size:13px}.v8bar{height:8px;border-radius:4px;background:#1d3a73;overflow:hidden;margin-top:6px}.v8bar i{display:block;height:100%;background:#2f6bff}';
+    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+
+    var H = window.HFC, KEY = 'hansfc_save_v2', PREF = 'hansfc_photos_pref', VER = '3.5.0', ov = null;
+    var $ = function (s) { return document.querySelector(s); };
+    var G = function () { return window.__hfc && window.__hfc.G; };
+    var S = function () { var g = G(); return g && g.S; };
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    function V() { var s = S(); return s ? (s.v8 = s.v8 || {}) : null; }
+    function save() { var g = G(); if (g) try { H.save(g, KEY); } catch (e) {} }
+    function refresh() { var t = $('#nav .on'); if (t) t.click(); }
+    function toast(t) { var e = document.getElementById('toast'); if (e) { e.textContent = t; e.className = 'on'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.className = ''; }, 2200); } }
+    function box(html) { if (ov) ov.remove(); ov = document.createElement('div'); ov.className = 'v8bg'; ov.innerHTML = '<div class="v8box">' + html + '</div>'; document.body.appendChild(ov); }
+    function shut() { if (ov) { ov.remove(); ov = null; } }
+    var btn = function (q, t, c) { return '<button class="v8b ' + (c || '') + '" data-v8="' + q + '">' + t + '</button>'; };
+    var pref = function () { try { return localStorage.getItem(PREF); } catch (e) { return null; } };
+    var setPref = function (v) { try { localStorage.setItem(PREF, v); } catch (e) {} };
+
+    /* =====================================================================
+       1. AUTO PLAYER PHOTOS (Wikipedia). Saved on the phone, outside the save file.
+       ===================================================================== */
+    var nk = function (n) { return String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim(); };
+    var cache = {}, ready = false, queue = [], running = 0, paused = true, fails = 0, msg = '', lastS = null, lastN = -1, REAL = null, dbp = null, asked = false, started = false;
+    function idb() { if (!dbp) dbp = new Promise(function (res) { try { var r = indexedDB.open('hansfc_photos', 1); r.onupgradeneeded = function () { r.result.createObjectStore('p'); }; r.onsuccess = function () { res(r.result); }; r.onerror = function () { res(null); }; } catch (e) { res(null); } }); return dbp; }
+    function idbPut(k, v) { idb().then(function (d) { if (d) try { d.transaction('p', 'readwrite').objectStore('p').put(v, k); } catch (e) {} }); }
+    function idbAll() { return idb().then(function (d) { return new Promise(function (res) { if (!d) return res({}); var o = {}; try { var c = d.transaction('p').objectStore('p').openCursor(); c.onsuccess = function () { var x = c.result; if (x) { o[x.key] = x.value; x.continue(); } else res(o); }; c.onerror = function () { res(o); }; } catch (e) { res(o); } }); }); }
+    function idbClear() { idb().then(function (d) { if (d) try { d.transaction('p', 'readwrite').objectStore('p').clear(); } catch (e) {} }); }
+    idbAll().then(function (o) { cache = o || {}; ready = true; });
+
+    function realSet() {
+      if (REAL) return REAL; REAL = {};
+      try {
+        Object.keys(H.REAL || {}).forEach(function (c) { H.parseReal(H.REAL[c]).forEach(function (r) { REAL[nk(r.name)] = r.name; }); });
+        if (H.FREE_STARS) H.parseReal(H.FREE_STARS).forEach(function (r) { REAL[nk(r.name)] = r.name; });
+      } catch (e) {}
+      return REAL;
+    }
+    function setImg(p, u) { var d = Object.getOwnPropertyDescriptor(p, 'img'); if (d) return; Object.defineProperty(p, 'img', { value: u, writable: true, configurable: true, enumerable: false }); }
+    /* give every known player his picture; pictures the user added by hand stay in the save file */
+    function attach() {
+      var s = S(); if (!s) return;
+      s.players.forEach(function (p) {
+        var d = Object.getOwnPropertyDescriptor(p, 'img'), c = cache[nk(p.n)];
+        if (d) { if (!d.enumerable && d.value !== (c && c.u)) Object.defineProperty(p, 'img', { value: d.value, writable: true, configurable: true, enumerable: true }); return; }
+        if (c && c.u) setImg(p, c.u);
+      });
+      lastS = s; lastN = s.players.length;
+    }
+    function build() {
+      var s = S(); if (!s) return; var R = realSet(), seen = {}, list = [];
+      s.players.slice().sort(function (a, b) { return ((b.cl === s.uid) - (a.cl === s.uid)) || (b.o - a.o); }).forEach(function (p) {
+        var k = nk(p.n); if (!R[k] || seen[k]) return; seen[k] = 1; var c = cache[k];
+        if (c && (c.u || Date.now() - c.t < 14 * 864e5)) return; list.push({ k: k, n: R[k] });
+      });
+      queue = list;
+    }
+    function counts() {
+      var s = S(), R = realSet(), seen = {}, have = 0, miss = 0; if (!s) return { total: 0, have: 0, miss: 0 };
+      s.players.forEach(function (p) { var k = nk(p.n); if (!R[k] || seen[k]) return; seen[k] = 1; var c = cache[k]; if (c && c.u) have++; else if (c) miss++; });
+      return { total: Object.keys(seen).length, have: have, miss: miss };
+    }
+    function find(name) {
+      var u = 'https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=' + encodeURIComponent(name + ' footballer') + '&gsrlimit=4&prop=pageimages%7Cdescription&piprop=thumbnail&pithumbsize=240&format=json&formatversion=2&origin=*';
+      return fetch(u).then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); }).then(function (j) {
+        var pg = ((j.query && j.query.pages) || []).slice().sort(function (a, b) { return a.index - b.index; }), want = nk(name).split(' ').filter(function (t) { return t.length > 2; });
+        for (var i = 0; i < pg.length; i++) {
+          var q = pg[i]; if (!/footballer|soccer|goalkeeper|midfielder|defender|striker|winger/i.test(q.description || '')) continue;
+          var tt = ' ' + nk(q.title) + ' ', hit = want.filter(function (t) { return tt.indexOf(' ' + t + ' ') >= 0; }).length;
+          if (!want.length || hit < Math.max(1, Math.ceil(want.length * 0.6)) || tt.indexOf(' ' + want[want.length - 1] + ' ') < 0) continue;
+          return q.thumbnail ? q.thumbnail.source : '';
+        }
+        return '';
+      });
+    }
+    function thumb(src) {
+      return new Promise(function (res) {
+        var im = new Image(); im.crossOrigin = 'anonymous';
+        im.onload = function () { try { var c = document.createElement('canvas'), w = im.naturalWidth, h = im.naturalHeight, s = Math.min(w, h); c.width = c.height = 96; c.getContext('2d').drawImage(im, (w - s) / 2, 0, s, s, 0, 0, 96, 96); res(c.toDataURL('image/jpeg', 0.72)); } catch (e) { res(''); } };
+        im.onerror = function () { res(''); }; im.src = src;
+      });
+    }
+    function put(k, data) {
+      var rec = { u: data || '', t: Date.now() }; cache[k] = rec; idbPut(k, rec);
+      if (data) { var s = S(); if (s) s.players.forEach(function (p) { if (nk(p.n) === k) setImg(p, data); }); }
+    }
+    function work() {
+      if (paused || !queue.length) { if (!paused && !queue.length && running === 0) { paused = true; msg = 'All done'; attach(); if (!ov) refresh(); } return; }
+      var job = queue.shift(); running++;
+      find(job.n).then(function (u) { return u ? thumb(u) : ''; }).then(function (d) { put(job.k, d); fails = 0; running--; setTimeout(work, 200); },
+        function () { running--; fails++; if (fails >= 6) { paused = true; msg = 'No internet connection. Try again later.'; } else queue.push(job); setTimeout(work, 1000); });
+    }
+    function go() { if (!S()) return; build(); paused = false; fails = 0; msg = ''; for (var i = running; i < 3; i++) work(); }
+    function photoBox() {
+      var c = counts(), pct = c.total ? Math.round(c.have * 100 / c.total) : 0;
+      box('<h3>📷 Player pictures</h3><div class="v8st"><b id="v8t">' + c.have + ' of ' + c.total + ' real players have a picture</b><div class="v8bar"><i id="v8p" style="width:' + pct + '%"></i></div><div id="v8m" style="margin-top:6px;color:#9fb9dc">' + esc(statusText(c)) + '</div></div><p style="font-size:12px;color:#9fb9dc;margin:0">The game looks up each real player on Wikipedia and keeps a small copy on your phone. It needs internet the first time. Players with a picture you added yourself keep it.</p>' +
+        btn(paused ? 'start' : 'pause', paused ? '▶ Download pictures' : '⏸ Pause') + (c.miss ? btn('retry', '🔁 Try the ' + c.miss + ' missing again', 'g') : '') + btn('clear', '🗑 Remove downloaded pictures', 'r') + btn('x', 'Close', 'g'));
+    }
+    function statusText(c) { return msg || (!paused ? 'Downloading… ' + queue.length + ' left' : c.have >= c.total && c.total ? 'Everything is downloaded' : 'Paused'); }
+    function paintStatus() { if (!ov) return; var c = counts(), t = $('#v8t'), p = $('#v8p'), m = $('#v8m'); if (!t) return; t.textContent = c.have + ' of ' + c.total + ' real players have a picture'; if (p) p.style.width = (c.total ? Math.round(c.have * 100 / c.total) : 0) + '%'; if (m) m.textContent = statusText(c); }
+    function consentBox() { box('<h3>📷 Add every player’s picture?</h3><p style="margin:0">The game can find each real player’s photo on Wikipedia and save it on your phone, all by itself. It needs internet and takes a few minutes the first time.</p>' + btn('yes', 'Yes, download them') + btn('no', 'Not now', 'g')); }
+
+    /* =====================================================================
+       2. PLAYERS 27+ LOSE RATING MORE SLOWLY, AND NOT AT ALL WHEN THEY PLAY WELL
+       ===================================================================== */
+    function soften(g, snap, rv) {
+      var s = g.S, uid = s.uid;
+      s.players.forEach(function (p) {
+        var o0 = snap[p.id]; if (o0 == null || p.del || p.a < 27) return;
+        var drop = o0 - p.o; if (drop <= 0) return;
+        var good = (p.rn >= 8 && p.rs / p.rn >= 6.6) || ((p.g || 0) + (p.as || 0)) >= 6 || (p.ap || 0) >= 18;
+        var lim = p.a <= 30 ? (good ? 0 : 1) : p.a <= 33 ? (good ? 1 : 2) : (good ? 2 : 3);
+        if (drop > lim) { p.o = o0 - lim; if (p.p < p.o) p.p = p.o; if (H.refresh) H.refresh(p); }
+      });
+      var ch = []; s.players.forEach(function (p) { if (p.cl === uid && snap[p.id] != null) { var d = p.o - snap[p.id]; if (Math.abs(d) >= 3 || (p.o >= 85 && d !== 0)) ch.push({ n: p.n, from: snap[p.id], to: p.o, id: p.id }); } });
+      if (rv) rv.changes = ch.sort(function (a, b) { return Math.abs(b.to - b.from) - Math.abs(a.to - a.from); }).slice(0, 8);
+    }
+    var oldEnd = H.endSeason;
+    if (oldEnd) H.endSeason = function (g) {
+      var snap = {}; g.S.players.forEach(function (p) { snap[p.id] = p.o; });
+      var rv = oldEnd.apply(this, arguments);
+      try { soften(g, snap, rv); } catch (e) { if (window.console) console.error('HANS FC 3.5 ageing', e); }
+      return rv;
+    };
+
+    /* =====================================================================
+       3. MORE AWARDS on the end-of-season awards night
+       ===================================================================== */
+    function moreAwards() {
+      var s = S(), g = G(), uc = H.userClub(g), out = [], tc = {}, rnd = function (a) { return a[Math.floor(Math.random() * a.length)]; };
+      var T = function (lg) { return tc[lg] || (tc[lg] = H.table(g, lg)); };
+      var pl = s.players.filter(function (p) { return p.cl != null && s.clubs[p.cl]; }), lgn = H.lgOf(uc.lg).name;
+      var perf = function (p) { return (p.g || 0) * 2 + (p.as || 0) * 1.2 + (p.ap || 0) * 0.08 + (p.o - 60) * 0.25 + (p.rn ? (p.rs / p.rn - 6) * 4 : 0); };
+      var top = function (arr, f) { var b = null, bv = -1e9; arr.forEach(function (p) { var v = f(p); if (v > bv) { bv = v; b = p; } }); return b; };
+      var add = function (c, p, x) { if (p) out.push({ c: c, n: p.n, club: s.clubs[p.cl].name, me: p.cl === s.uid, x: x || '' }); };
+      var gaBonus = function (p) { var t = T(s.clubs[p.cl].lg).slice().sort(function (a, b) { return a.ga - b.ga; }), r = 0; t.forEach(function (x, i) { if (x.id === p.cl) r = i; }); return (t.length - r) * 0.25; };
+      var gb = top(pl, function (p) { return (p.g || 0) * 100 + (p.as || 0); }); if (gb && gb.g > 0) add('Golden Boot (top scorer)', gb, gb.g + ' goals');
+      var lgp = pl.filter(function (p) { return s.clubs[p.cl].lg === uc.lg; });
+      var ts = top(lgp, function (p) { return (p.g || 0) * 100 + (p.as || 0); }); if (ts && ts.g > 0 && ts !== gb) add('Top scorer · ' + lgn, ts, ts.g + ' goals');
+      var pm = top(pl, function (p) { return (p.as || 0) * 100 + (p.g || 0); }); if (pm && pm.as > 0) add('Playmaker of the Year (most assists)', pm, pm.as + ' assists');
+      add('Player of the Season · ' + lgn, top(lgp.filter(function (p) { return (p.ap || 0) >= 10; }), perf), '');
+      add('Best Defender of the Year', top(pl.filter(function (p) { return H.GROUP[p.pos] === 'D' && (p.ap || 0) >= 10; }), function (p) { return perf(p) + gaBonus(p); }), '');
+      add('Best Midfielder of the Year', top(pl.filter(function (p) { return H.GROUP[p.pos] === 'M' && (p.ap || 0) >= 10; }), perf), '');
+      var base = s.v8 && s.v8.base && s.v8.base.y === s.year ? s.v8.base.o : null;
+      if (base) { var bt = top(pl.filter(function (p) { return p.a <= 23 && base[p.id] != null && p.o - base[p.id] >= 2; }), function (p) { return (p.o - base[p.id]) * 10 + perf(p) * 0.1; }); if (bt) add('Breakthrough Player (best improver under 24)', bt, '+' + (bt.o - base[bt.id]) + ' overall this season'); }
+      add('Veteran of the Year (32 and over)', top(pl.filter(function (p) { return p.a >= 32 && (p.ap || 0) >= 8; }), perf), '');
+      var gk = top(pl.filter(function (p) { return H.GROUP[p.pos] === 'G' && (p.ap || 0) >= 8; }), perf);
+      if (gk) { var oc = rnd(H.lgClubs(g, s.clubs[gk.cl].lg).filter(function (c) { return c.id !== gk.cl; })); add('Save of the Season', gk, rnd(['a stunning double save', 'a one-handed stop at full stretch', 'a penalty save in injury time', 'a fingertip tip-over from distance']) + (oc ? ' against ' + oc.name : '')); }
+      var t = T(uc.lg), ba = t.slice().sort(function (a, b) { return b.gf - a.gf; })[0], bd = t.slice().sort(function (a, b) { return a.ga - b.ga; })[0];
+      if (ba) out.push({ c: 'Best Attack · ' + lgn, n: ba.name, club: lgn, me: ba.id === s.uid, x: ba.gf + ' goals scored' });
+      if (bd) out.push({ c: 'Best Defence · ' + lgn, n: bd.name, club: lgn, me: bd.id === s.uid, x: bd.ga + ' goals conceded' });
+      return out;
+    }
+    document.addEventListener('click', function (e) {
+      if (!e.target.closest('#screen [data-act="endseason"]') || !G()) return;
+      setTimeout(function () {
+        try {
+          var b = document.querySelector('.v4bg [data-v4="awgo"]'), s = S(), v = V(); if (!b || b.dataset.v8 || !v || v.awY === s.year) return;
+          b.dataset.v8 = '1'; v.awY = s.year;
+          var out = moreAwards(); if (!out.length) return;
+          b.insertAdjacentHTML('beforebegin', '<div class="v4t" style="margin-top:12px">More awards</div>' + out.map(function (x) { return '<div class="v4c ' + (x.me ? 'me' : '') + '"><div class="v4t">' + esc(x.c) + '</div><b>' + esc(x.n) + '</b> <span class="v4s">' + esc(x.club) + '</span>' + (x.x ? '<div class="v4s">' + esc(x.x) + '</div>' : '') + '</div>'; }).join(''));
+          out.forEach(function (x) { if (x.me) { s.mgr.xp = (s.mgr.xp || 0) + 30; s.mgr.rep = Math.min(100, s.mgr.rep + 1); try { H.news(G(), '🏆 ' + x.c + ': ' + x.n, 'g'); } catch (er) {} } });
+          var h = window.__hfcV4 && window.__hfcV4.V && window.__hfcV4.V().awards; if (h && h[0] && h[0].it) out.forEach(function (x) { h[0].it.push(x); });
+          save();
+        } catch (er) { if (window.console) console.error('HANS FC 3.5 awards', er); }
+      }, 0);
+    }, true);
+    function baseSnap() {
+      var s = S(); if (!s || s.week < 1 || s.stage === 'pre') return; var v = V();
+      if (!v.base || v.base.y !== s.year) { var o = {}; s.players.forEach(function (p) { o[p.id] = p.o; }); v.base = { y: s.year, o: o }; }
+    }
+
+    /* ---------- buttons and clicks ---------- */
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-v8]'); if (!b || !G()) return; var q = b.dataset.v8;
+      try {
+        if (q === 'x') shut(); else if (q === 'photos') photoBox();
+        else if (q === 'yes') { setPref('yes'); shut(); started = true; go(); toast('Downloading pictures…'); }
+        else if (q === 'no') { setPref('no'); shut(); }
+        else if (q === 'start') { setPref('yes'); started = true; go(); photoBox(); }
+        else if (q === 'pause') { paused = true; msg = 'Paused'; photoBox(); }
+        else if (q === 'retry') { Object.keys(cache).forEach(function (k) { if (!cache[k].u) delete cache[k]; }); go(); photoBox(); }
+        else if (q === 'clear') { paused = true; queue = []; cache = {}; idbClear(); var s = S(); if (s) s.players.forEach(function (p) { var d = Object.getOwnPropertyDescriptor(p, 'img'); if (d && !d.enumerable) delete p.img; }); setPref('no'); lastN = -1; msg = 'Removed'; photoBox(); refresh(); }
+      } catch (er) { if (window.console) console.error('HANS FC 3.5 click', er); }
+    });
+    function tick() {
+      try {
+        var s = S(); if (!s || !G() || !ready) return;
+        if (s !== lastS || s.players.length !== lastN) attach();
+        baseSnap();
+        var p = pref();
+        if (p === 'yes' && !started && navigator.onLine !== false) { started = true; go(); }
+        else if (p == null && !asked && !ov) { asked = true; setTimeout(function () { if (!ov && pref() == null) consentBox(); }, 3000); }
+        paintStatus();
+      } catch (e) {}
+    }
+    function patch() {
+      try {
+        if (!S() || !G()) return;
+        var host = $('#screen .v3tools'); if (host && !host.querySelector('[data-v8="photos"]')) host.insertAdjacentHTML('beforeend', '<button class="btn full" style="margin-top:8px" data-v8="photos">📷 PLAYER PICTURES</button>');
+      } catch (e) {}
+    }
+    var scr = document.getElementById('screen');
+    if (scr) new MutationObserver(function () { setTimeout(patch, 300); }).observe(scr, { childList: true });
+    setInterval(function () { tick(); patch(); }, 1500);
+    var ob = window.__back; window.__back = function () { if (ov) { shut(); return true; } return ob ? ob() : false; };
+    window.__hfcV8 = { nk: nk, find: find, build: build, counts: counts, attach: attach, soften: soften, moreAwards: moreAwards, ver: VER };
+  } catch (err) { if (window.console) console.error('HANS FC 3.5 add-on failed', err); }
 })();
+
 
 
 

@@ -1516,7 +1516,201 @@
     var ob = window.__back; window.__back = function () { if (ov) { shut(); return true; } return ob ? ob() : false; };
     window.__hfcV6 = { fit: fit, ver: VER };
   } catch (err) { if (window.console) console.error('HANS FC 3.3 add-on failed', err); }
+})();/* ===== HANS FC 3.2.0 add-on. PASTE AT THE VERY END of app.js, BELOW the 3.1.0 block. Do NOT select all. ===== */
+(function () {
+  try {
+    var css = '.v5bg{position:fixed;inset:0;z-index:95;background:#000d;display:grid;place-items:center;padding:12px}.v5box{width:100%;max-width:440px;max-height:90vh;overflow-y:auto;background:#10244a;color:#fff;border:2px solid #2f4fa0;border-radius:10px;padding:14px;font-size:14px}.v5box h3{margin:0 0 8px;font-size:17px}.v5box label{display:block;font-size:12px;color:#9fb9dc;margin:8px 0 3px}.v5box input,.v5box select{width:100%;box-sizing:border-box;padding:8px;border-radius:6px;border:1px solid #3a5aa8;background:#0b1a38;color:#fff;font-size:15px}.v5box input[type=color]{height:38px;padding:2px}.v5b{display:block;width:100%;margin-top:8px;padding:10px;border:0;border-radius:6px;background:#2f6bff;color:#fff;font-weight:700;font-size:14px}.v5b.g{background:#2a3d66}.v5b.r{background:#a02a3a}.v5r{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #1d3a73;font-size:13px}.v5c{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #1d3a73}.v5f{width:54px;height:54px;border-radius:50%;overflow:hidden;flex:none;background:#c9d3e2;border:2px solid #4a6bc0}.v5c .sp{flex:1;min-width:0}.v5c small{display:block;color:#9fb9dc;font-size:11px}.v5c button{border:0;border-radius:6px;background:#2a3d66;color:#fff;padding:7px 9px;font-size:13px}.v5st{background:#0b1a38;border:1px solid #2f4fa0;border-radius:8px;padding:8px 10px;margin:8px 0;font-size:13px}';
+    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+
+    var H = window.HFC, KEY = 'hansfc_save_v2', VER = '3.2.0', ov = null, uid = 0;
+    var $ = function (s) { return document.querySelector(s); };
+    var G = function () { return window.__hfc && window.__hfc.G; };
+    var S = function () { var g = G(); return g && g.S; };
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var clamp = function (x, a, b) { return Math.max(a, Math.min(b, x)); };
+    function V() { var s = S(); return s ? (s.v5 = s.v5 || { cp: {}, cn: {}, club: {} }) : null; }
+    function save() { var g = G(); if (g) try { H.save(g, KEY); } catch (e) {} }
+    function refresh() { var t = $('#nav .on'); if (t) t.click(); }
+    function toast(t) { var e = document.getElementById('toast'); if (e) { e.textContent = t; e.className = 'on'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.className = ''; }, 2200); } }
+    function box(html) { if (ov) ov.remove(); ov = document.createElement('div'); ov.className = 'v5bg'; ov.innerHTML = '<div class="v5box">' + html + '</div>'; document.body.appendChild(ov); }
+    function shut() { if (ov) { ov.remove(); ov = null; } }
+    var btn = function (q, t, c, k) { return '<button class="v5b ' + (c || '') + '" data-v5="' + q + '"' + (k != null ? ' data-k="' + esc(k) + '"' : '') + '>' + t + '</button>'; };
+    var row = function (l, r, c) { return '<div class="' + (c || 'v5r') + '"><span>' + l + '</span><b>' + r + '</b></div>'; };
+    var val = function (id) { var e = $('#' + id); return e ? e.value.trim() : ''; };
+    function shrink(f, cb) {
+      var rd = new FileReader(); rd.onerror = function () { cb(null); };
+      rd.onload = function () { var im = new Image(); im.onerror = function () { cb(null); }; im.onload = function () { var c = document.createElement('canvas'), sz = Math.min(im.width, im.height); c.width = c.height = 112; c.getContext('2d').drawImage(im, (im.width - sz) / 2, Math.max(0, (im.height - sz) / 4), sz, sz, 0, 0, 112, 112); cb(c.toDataURL('image/jpeg', 0.75)); }; im.src = rd.result; };
+      rd.readAsDataURL(f);
+    }
+    function pick(cb) { var i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = function () { if (i.files && i.files[0]) shrink(i.files[0], function (u) { if (u) cb(u); else toast('Could not read that picture'); }); }; i.click(); }
+
+    /* ---------- real stadiums and training grounds (capacities are approximate) ---------- */
+    var T = [
+      'arsenal;Emirates Stadium;60700;London;2006;London Colney', 'aston villa;Villa Park;42700;Birmingham;1897;Bodymoor Heath', 'bournemouth;Vitality Stadium;11300;Bournemouth;1910;', 'brentford;Gtech Community Stadium;17250;London;2020;',
+      'brighton,brighton and hove albion,brighton hove albion;Amex Stadium;31800;Brighton;2011;Amex Elite Performance Centre', 'burnley;Turf Moor;21900;Burnley;1883;Gawthorpe', 'chelsea;Stamford Bridge;40200;London;1877;Cobham', 'crystal palace;Selhurst Park;25500;London;1924;Beckenham',
+      'everton;Hill Dickinson Stadium;52800;Liverpool;2025;Finch Farm', 'fulham;Craven Cottage;29600;London;1896;Motspur Park', 'leeds,leeds united;Elland Road;37600;Leeds;1897;Thorp Arch', 'liverpool;Anfield;61300;Liverpool;1884;AXA Training Centre',
+      'manchester city,man city;Etihad Stadium;53400;Manchester;2003;City Football Academy', 'manchester united,man united,man utd,manchester utd;Old Trafford;74000;Manchester;1910;Carrington', 'newcastle,newcastle united;St James’ Park;52300;Newcastle;1892;Benton', 'nottingham forest,nottm forest;City Ground;30400;Nottingham;1898;',
+      'sunderland;Stadium of Light;49000;Sunderland;1997;Academy of Light', 'tottenham,tottenham hotspur,spurs;Tottenham Hotspur Stadium;62900;London;2019;Hotspur Way', 'west ham,west ham united;London Stadium;62500;London;2016;Rush Green', 'wolves,wolverhampton,wolverhampton wanderers;Molineux Stadium;31700;Wolverhampton;1889;Compton Park',
+      'leicester,leicester city;King Power Stadium;32300;Leicester;2002;Seagrave', 'southampton;St Mary’s Stadium;32500;Southampton;2001;Staplewood', 'ipswich,ipswich town;Portman Road;29800;Ipswich;1884;', 'sheffield united;Bramall Lane;32000;Sheffield;1855;',
+      'real madrid;Santiago Bernabéu;83000;Madrid;1947;Ciudad Real Madrid (Valdebebas)', 'barcelona;Spotify Camp Nou;99000;Barcelona;1957;Ciutat Esportiva Joan Gamper', 'atletico madrid,atletico de madrid;Riyadh Air Metropolitano;70500;Madrid;2017;Cerro del Espino', 'sevilla;Ramón Sánchez-Pizjuán;43900;Seville;1958;Ciudad Deportiva José Ramón Cisneros Palacios',
+      'real sociedad;Reale Arena (Anoeta);39500;San Sebastián;1993;Zubieta', 'athletic club,athletic bilbao,athletic;San Mamés;53300;Bilbao;2013;Lezama', 'villarreal;Estadio de la Cerámica;23000;Villarreal;1923;Ciudad Deportiva', 'valencia;Mestalla;49000;Valencia;1923;Ciudad Deportiva de Paterna',
+      'real betis,betis;Benito Villamarín;60700;Seville;1929;Ciudad Deportiva Luis del Sol', 'girona;Montilivi;14000;Girona;1970;', 'celta vigo,celta de vigo,celta;Balaídos;24700;Vigo;1928;A Madroa', 'osasuna;El Sadar;23500;Pamplona;1967;Tajonar', 'getafe;Coliseum;16500;Getafe;1998;', 'mallorca;Son Moix;26000;Palma;1999;', 'rayo vallecano;Estadio de Vallecas;14500;Madrid;1976;', 'espanyol;RCDE Stadium;40000;Cornellà;2009;',
+      'juventus;Allianz Stadium;41500;Turin;2011;Continassa', 'inter,inter milan,internazionale;San Siro (Giuseppe Meazza);75800;Milan;1926;Appiano Gentile', 'milan;San Siro (Giuseppe Meazza);75800;Milan;1926;Milanello', 'napoli;Stadio Diego Armando Maradona;54700;Naples;1959;Castel Volturno',
+      'roma;Stadio Olimpico;70600;Rome;1953;Trigoria', 'lazio;Stadio Olimpico;70600;Rome;1953;Formello', 'atalanta;Gewiss Stadium;24950;Bergamo;1928;Zingonia', 'fiorentina;Stadio Artemio Franchi;43000;Florence;1931;Viola Park', 'bologna;Stadio Renato Dall’Ara;36500;Bologna;1927;Casteldebole', 'torino;Stadio Olimpico Grande Torino;28200;Turin;1933;Filadelfia',
+      'genoa;Stadio Luigi Ferraris;36600;Genoa;1911;', 'udinese;Bluenergy Stadium;25100;Udine;1976;', 'sassuolo;Mapei Stadium;21500;Reggio Emilia;1995;', 'como;Stadio Giuseppe Sinigaglia;13600;Como;1927;',
+      'bayern munich,bayern,bayern munchen;Allianz Arena;75000;Munich;2005;Säbener Straße', 'borussia dortmund,dortmund;Signal Iduna Park;81400;Dortmund;1974;Brackel', 'rb leipzig,leipzig,rasenballsport leipzig;Red Bull Arena;47800;Leipzig;2004;Cottaweg', 'bayer leverkusen,bayer 04 leverkusen,leverkusen;BayArena;30200;Leverkusen;1958;Kurtekotten',
+      'eintracht frankfurt,frankfurt;Deutsche Bank Park;58000;Frankfurt;1925;', 'stuttgart,vfb stuttgart;MHPArena;60400;Stuttgart;1933;', 'borussia monchengladbach,monchengladbach,gladbach;Borussia-Park;54000;Mönchengladbach;2004;', 'wolfsburg;Volkswagen Arena;28900;Wolfsburg;2002;', 'werder bremen;Weserstadion;42100;Bremen;1909;',
+      'freiburg;Europa-Park Stadion;34700;Freiburg;2021;', 'union berlin;Stadion An der Alten Försterei;22000;Berlin;1920;', 'hoffenheim;PreZero Arena;30150;Sinsheim;2009;', 'mainz,mainz 05;Mewa Arena;33300;Mainz;2011;', 'hamburg,hamburger sv;Volksparkstadion;57000;Hamburg;1953;', 'schalke,schalke 04;Veltins-Arena;62000;Gelsenkirchen;2001;', 'augsburg;WWK Arena;30600;Augsburg;2009;',
+      'paris saint germain,paris sg,psg;Parc des Princes;47900;Paris;1972;Campus PSG (Poissy)', 'marseille,olympique marseille,olympique de marseille;Stade Vélodrome;67400;Marseille;1937;La Commanderie', 'lyon,olympique lyon,olympique lyonnais;Groupama Stadium;59000;Lyon;2016;Groupama OL Academy', 'monaco;Stade Louis II;18500;Monaco;1985;La Turbie',
+      'lille,losc lille;Decathlon Arena;50100;Lille;2012;Domaine de Luchin', 'nice,ogc nice;Allianz Riviera;36200;Nice;2013;', 'rennes,stade rennais;Roazhon Park;29200;Rennes;1912;La Piverdière', 'lens,rc lens;Stade Bollaert-Delelis;38000;Lens;1933;', 'nantes;Stade de la Beaujoire;35300;Nantes;1984;La Jonelière', 'strasbourg,rc strasbourg;Stade de la Meinau;32000;Strasbourg;1914;', 'toulouse;Stadium de Toulouse;33000;Toulouse;1937;',
+      'ajax;Johan Cruijff Arena;55000;Amsterdam;1996;De Toekomst', 'psv,psv eindhoven;Philips Stadion;35000;Eindhoven;1913;De Herdgang', 'feyenoord;De Kuip;47000;Rotterdam;1937;Varkenoord', 'az alkmaar,az;AFAS Stadion;19000;Alkmaar;2006;', 'benfica,sl benfica;Estádio da Luz;65000;Lisbon;2003;Benfica Campus (Seixal)', 'porto;Estádio do Dragão;50000;Porto;2003;Olival',
+      'sporting cp,sporting lisbon,sporting,sporting clube de portugal;Estádio José Alvalade;50000;Lisbon;2003;Academia de Alcochete', 'braga;Estádio Municipal de Braga;30000;Braga;2003;', 'celtic;Celtic Park;60000;Glasgow;1892;Lennoxtown', 'rangers;Ibrox Stadium;50800;Glasgow;1899;Auchenhowie', 'galatasaray;RAMS Park;52000;Istanbul;2011;Florya',
+      'fenerbahce;Şükrü Saracoğlu Stadium;47400;Istanbul;1908;', 'besiktas;Tüpraş Stadium;42000;Istanbul;2016;', 'club brugge,brugge;Jan Breydel Stadium;29000;Bruges;1975;', 'anderlecht,rsc anderlecht;Lotto Park;22500;Brussels;1917;', 'olympiacos;Karaiskakis Stadium;32000;Piraeus;1896;', 'panathinaikos;OPAP Arena;30000;Athens;2024;',
+      'red bull salzburg,salzburg;Red Bull Arena;30000;Salzburg;2003;', 'young boys,bsc young boys;Wankdorf Stadium;31000;Bern;1925;', 'copenhagen,fc copenhagen;Parken;38000;Copenhagen;1992;', 'basel,fc basel;St. Jakob-Park;38000;Basel;2001;',
+      'al hilal;Kingdom Arena;60000;Riyadh;2014;', 'al nassr;Al-Awwal Park;25000;Riyadh;2014;', 'inter miami;Chase Stadium;21500;Fort Lauderdale;2020;', 'la galaxy;Dignity Health Sports Park;27000;Carson;2003;'
+    ].join('|');
+    var DB = {}, DK = [];
+    T.split('|').forEach(function (r) { var a = r.split(';'), rec = { s: a[1], c: +a[2], t: a[3], o: +a[4], g: a[5] || '' }; a[0].split(',').forEach(function (k) { DB[k] = rec; if (k.length >= 9 || k.indexOf(' ') > 0) DK.push(k); }); });
+    function norm(n) { return String(n).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/&/g, ' and ').replace(/[^a-z0-9 ]/g, ' ').replace(/\b(fc|cf|afc|sc|ac|as|ssc|fk|ud|cd|sv|vfl|vfb|bsc|fsv|tsg|ssv|rcd)\b/g, ' ').replace(/\s+/g, ' ').trim(); }
+    function real(n) { var k = norm(n); if (DB[k]) return DB[k]; var w = ' ' + k + ' '; for (var i = 0; i < DK.length; i++) if (w.indexOf(' ' + DK[i] + ' ') >= 0) return DB[DK[i]]; return null; }
+    function info(c) { var o = V().club[c.id] || {}, b = real(o.rn || c.name) || {}; return { s: o.s || b.s || '', c: o.c || b.c || 0, t: o.t || b.t || '', o: o.o || b.o || 0, g: o.g || b.g || '', nick: o.nick || '', f: o.f || '' }; }
+    function stadRows(i, cls) { return (i.t ? row('City', esc(i.t), cls) : '') + (i.c ? row('Real capacity (approx.)', i.c.toLocaleString('en-US'), cls) : '') + (i.o ? row('Opened', i.o, cls) : '') + (i.g ? row('Training ground', esc(i.g), cls) : '') + (i.nick ? row('Nickname', esc(i.nick), cls) : '') + (i.f ? row('Founded', esc(i.f), cls) : ''); }
+
+    /* ---------- coaches and staff: every club gets a manager and five staff with portraits ---------- */
+    var FN = ['Carlos', 'Marco', 'Hans', 'Antoine', 'Diego', 'Luca', 'Mateo', 'Viktor', 'Sven', 'Ruben', 'Tomas', 'Andre'], LN = ['Alvarez', 'Bianchi', 'Keller', 'Moreau', 'Santos', 'Rossi', 'Novak', 'Larsen', 'Duarte', 'Fischer', 'Costa', 'Petrov'];
+    var NAT = ['England', 'Spain', 'Italy', 'Germany', 'France', 'Portugal', 'Netherlands', 'Brazil', 'Argentina', 'Scotland', 'Croatia', 'Denmark'];
+    var ROLES = [['mgr', 'Manager'], ['asst', 'Assistant manager'], ['gk', 'Goalkeeping coach'], ['fit', 'Fitness coach'], ['scout', 'Head scout'], ['phys', 'Head physio']];
+    function rng(seed) { var x = (seed * 2654435761 + 12345) % 4294967296; return function () { x = (x * 1664525 + 1013904223) % 4294967296; return x / 4294967296; }; }
+    function staff(c, ri) {
+      var key = c.id * 10 + ri, o = V().cn[key] || {}, r = rng(key + 11), uc = H.userClub(G()), mine = uc && c.id === uc.id, v4 = S().v4;
+      var nm = ri === 0 ? FN[c.id % 12] + ' ' + LN[(c.id * 7 + 3) % 12] : FN[(c.id * 5 + ri * 3 + 1) % 12] + ' ' + LN[(c.id * 3 + ri * 5 + 2) % 12];
+      var nat = NAT[Math.floor(r() * 12)], a = ri === 0 ? 40 + Math.floor(r() * 25) : 32 + Math.floor(r() * 30);
+      if (mine && ri === 0) { nm = S().mgr.name; if (v4) { nat = v4.nat || nat; a = v4.age || a; } }
+      return { key: key, role: ROLES[ri][1], rk: ROLES[ri][0], n: o.n || nm, nat: o.nat || nat, a: o.a || a, mine: mine };
+    }
+    function sh(h, d) { var n = parseInt(h.slice(1), 16), f = function (v) { return Math.max(0, Math.min(255, v)); }; return '#' + ((1 << 24) + (f((n >> 16) + d) << 16) + (f(((n >> 8) & 255) + d) << 8) + f((n & 255) + d)).toString(16).slice(1); }
+    var SK = ['#f2cfb0', '#e6b78f', '#d09c74', '#b07850', '#8a5a38', '#5e3b24'], HR = ['#15110d', '#35261a', '#5d4129', '#8d6a3f', '#8b8b8b', '#cfcfcf'], EY = ['#4a3220', '#3d6a8c', '#4f7a4a', '#2a2018'];
+    function cface(key, col, rk, nat, age) {
+      var r = rng(key * 31 + 5), id = 'cf' + (++uid), a = age || 45, old = a > 52 ? 1 : a > 44 ? 0.5 : 0;
+      var sk = SK[Math.floor(r() * 4) + (nat === 'Brazil' ? 2 : 0)], hr = HR[r() < old ? (r() < 0.5 ? 4 : 5) : Math.floor(r() * 4)], e = EY[Math.floor(r() * 4)];
+      var gl = r() < 0.3, stub = r() < 0.4, smile = r() < 0.5, hs = old && r() < 0.45 ? (r() < 0.5 ? 0 : 3) : 1 + Math.floor(r() * 2), suit = rk === 'mgr' || rk === 'asst';
+      col = /^#[0-9a-f]{6}$/i.test(col || '') ? col : '#2f6bff';
+      var s1 = sh(sk, -12), s2 = sh(sk, -26);
+      var hair = ['', '<path d="M31 40C28 17 72 17 69 40C66 31 59 27 50 27C41 27 34 31 31 40Z" fill="' + hr + '"/>', '<path d="M31 40C27 16 73 14 69 40C67 30 62 26 54 25C46 24 36 28 31 40Z" fill="' + hr + '"/><path d="M36 28C44 22 58 23 66 29" stroke="' + sh(hr, 25) + '" stroke-width="1.4" fill="none"/>', '<path d="M31 42C29 28 38 23 45 25C39 28 36 33 34 43ZM69 42C71 28 62 23 55 25C61 28 64 33 66 43Z" fill="' + hr + '"/>'][hs];
+      return '<svg viewBox="0 0 100 100" width="100%" height="100%" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="' + id + 'a" x1="0" x2="1"><stop offset="0" stop-color="' + s1 + '"/><stop offset=".5" stop-color="' + sk + '"/><stop offset="1" stop-color="' + s2 + '"/></linearGradient><radialGradient id="' + id + 'b" cx=".5" cy=".3" r=".8"><stop offset="0" stop-color="#eef3fb"/><stop offset="1" stop-color="#9fb0c8"/></radialGradient></defs>' +
+        '<rect width="100" height="100" fill="url(#' + id + 'b)"/><path d="M6 100C8 80 28 73 50 73C72 73 92 80 94 100Z" fill="' + (suit ? '#1b2433' : col) + '"/>' +
+        (suit ? '<path d="M39 73L50 90L61 73Z" fill="#f4f6fa"/><path d="M48 77h4l1.5 15L50 96l-3.5-4z" fill="#8f1d2c"/>' : '<path d="M38 73L50 84L62 73Z" fill="' + sh(col, 40) + '"/><path d="M50 84V100" stroke="' + sh(col, -40) + '" stroke-width="1.2"/>') +
+        '<rect x="42" y="58" width="16" height="18" rx="6" fill="url(#' + id + 'a)"/><path d="M42 65Q50 72 58 65V61H42Z" fill="#000" opacity=".16"/><ellipse cx="31" cy="45" rx="3.2" ry="5.5" fill="' + s1 + '"/><ellipse cx="69" cy="45" rx="3.2" ry="5.5" fill="' + s2 + '"/><ellipse cx="50" cy="42" rx="19" ry="23" fill="url(#' + id + 'a)"/>' + hair +
+        '<path d="M37 36Q42 33 47 35.5M53 35.5Q58 33 63 36" stroke="' + hr + '" stroke-width="2" fill="none" stroke-linecap="round"/><ellipse cx="42" cy="40" rx="3.4" ry="2.1" fill="#fff"/><ellipse cx="58" cy="40" rx="3.4" ry="2.1" fill="#fff"/><circle cx="42" cy="40" r="1.7" fill="' + e + '"/><circle cx="58" cy="40" r="1.7" fill="' + e + '"/><circle cx="42" cy="40" r=".8" fill="#000"/><circle cx="58" cy="40" r=".8" fill="#000"/>' +
+        '<path d="M50 41L48.3 50Q50 52 52 50" stroke="' + s2 + '" stroke-width="1.3" fill="none" stroke-linecap="round"/>' + (stub ? '<path d="M33 49Q35 65 50 66Q65 65 67 49Q60 59 50 59Q40 59 33 49Z" fill="' + hr + '" opacity=".25"/>' : '') +
+        '<path d="' + (smile ? 'M43 56Q50 61 57 56' : 'M44 57Q50 59 56 57') + '" stroke="#8a3a3a" stroke-width="1.7" fill="none" stroke-linecap="round"/>' + (old > 0.4 ? '<path d="M41 31Q50 29 59 31" stroke="' + s2 + '" stroke-width=".8" fill="none" opacity=".5"/>' : '') +
+        (gl ? '<circle cx="42" cy="40" r="6" fill="none" stroke="#222" stroke-width="1.2"/><circle cx="58" cy="40" r="6" fill="none" stroke="#222" stroke-width="1.2"/><path d="M48 39.5Q50 38 52 39.5" stroke="#222" stroke-width="1.1" fill="none"/>' : '') + '</svg>';
+    }
+    var oldFace = H.face;
+    H.face = function (p, sz, col) {
+      try {
+        if (p && p.ck != null) { var im = V().cp[p.ck]; return im ? '<img src="' + im + '" style="width:100%;height:100%;object-fit:cover" alt="">' : cface(p.ck, col, p.rk, p.nat, p.a); }
+        if (p && p.id === 4242) { var v4 = S().v4; if (!(v4 && v4.img)) return cface(4242, col, 'mgr', v4 && v4.nat, v4 && v4.age); }
+      } catch (e) {}
+      return oldFace.apply(this, arguments);
+    };
+    var clubs = function () { var c = S().clubs; return Array.isArray(c) ? c : Object.keys(c).map(function (k) { return c[k]; }); };
+    var natList = function (cur) { var n = {}; S().players.forEach(function (p) { if (p.nat) n[p.nat] = 1; }); if (cur) n[cur] = 1; return Object.keys(n).sort().map(function (x) { return '<option' + (x === cur ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join(''); };
+
+    function staffBox(cid) {
+      var s = S(), uc = H.userClub(G()), c = s.clubs[cid == null ? uc.id : cid], i = info(c), my = c.id === uc.id;
+      box('<h3>Coaches and staff</h3><label>Club</label><select id="v5cl">' + clubs().filter(function (x) { return x.lg === uc.lg; }).map(function (x) { return '<option value="' + x.id + '"' + (x.id === c.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select>' +
+        (i.s ? '<div class="v5st"><b>🏟️ ' + esc(i.s) + '</b>' + stadRows(i) + '</div>' : '') +
+        ROLES.map(function (r, n) { var m = staff(c, n), fp = (n === 0 && my) ? { id: 4242, n: 'M', nat: m.nat, a: m.a } : { ck: m.key, rk: m.rk, nat: m.nat, a: m.a }; return '<div class="v5c"><div class="v5f">' + H.face(fp, 54, c.col) + '</div><div class="sp"><b>' + esc(m.n) + '</b><small>' + m.role + ' · ' + esc(m.nat) + ' · ' + m.a + ' years</small></div><button data-v5="sedit" data-k="' + c.id + '|' + n + '">✏️</button></div>'; }).join('') + btn('cust', 'Back', 'g') + btn('x', 'Close', 'g'));
+    }
+    function sedit(cid, ri) {
+      var c = S().clubs[cid], m = staff(c, ri);
+      if (ri === 0 && m.mine && window.__hfcV4 && window.__hfcV4.f.mgrBox) return window.__hfcV4.f.mgrBox();
+      box('<h3>' + m.role + '</h3><div style="width:90px;height:90px;border-radius:50%;overflow:hidden;margin:0 auto">' + H.face({ ck: m.key, rk: m.rk, nat: m.nat, a: m.a }, 90, c.col) + '</div>' + btn('spic', '📷 Change picture', 'g', m.key) + '<label>Name</label><input id="v5n" maxlength="24" value="' + esc(m.n) + '"><label>Nationality</label><input id="v5na" maxlength="20" value="' + esc(m.nat) + '"><label>Age</label><input id="v5ag" type="number" min="25" max="80" value="' + m.a + '">' + btn('ssave', 'Save', '', m.key) + btn('staff', 'Back', 'g', cid));
+    }
+
+    /* ---------- customize: club, stadium, players ---------- */
+    function custBox() { box('<h3>Customize</h3><p style="font-size:12px;color:#9fb9dc;margin:0">Create your own information. Everything is saved with your game.</p>' + btn('club', '🏟️ My club, stadium and facilities') + btn('staff', '👥 Coaches and staff', 'g') + btn('plist', '🧑 My players: info and photos', 'g') + btn('newp', '🆕 Create my own player', 'g') + btn('x', 'Close', 'g')); }
+    function clubBox() {
+      var uc = H.userClub(G()), i = info(uc), col = /^#[0-9a-f]{6}$/i.test(uc.col || '') ? uc.col : '#2f6bff';
+      box('<h3>My club and stadium</h3><label>Club name</label><input id="v5a" maxlength="28" value="' + esc(uc.name) + '"><label>Stadium name</label><input id="v5b" maxlength="34" value="' + esc(i.s) + '"><label>City</label><input id="v5c" maxlength="24" value="' + esc(i.t) + '"><label>Stadium capacity (shown on screen)</label><input id="v5d" type="number" min="1000" max="150000" value="' + (i.c || '') + '"><label>Opened</label><input id="v5e" type="number" min="1800" max="2100" value="' + (i.o || '') + '"><label>Training ground</label><input id="v5g" maxlength="34" value="' + esc(i.g) + '"><label>Nickname</label><input id="v5h" maxlength="24" value="' + esc(i.nick) + '"><label>Founded</label><input id="v5i" maxlength="4" value="' + esc(i.f) + '"><label>Main kit colour</label><input id="v5k" type="color" data-o="' + col + '" value="' + col + '">' + btn('csave', 'Save') + btn('creset', 'Back to real stadium data', 'g') + btn('cust', 'Back', 'g'));
+    }
+    var pl = function (id) { return H.userCards(G()).filter(function (p) { return p.id === id; })[0]; };
+    function plBox() {
+      var uc = H.userClub(G()), cards = H.userCards(G()).slice().sort(function (a, b) { return b.o - a.o; }), n = cards.filter(function (p) { return p.img; }).length;
+      box('<h3>My players</h3><div style="font-size:12px;color:#9fb9dc">' + n + ' of ' + cards.length + ' have a photo. Tap 📷 to add one, or use IMPORT PHOTOS on the Game page to add many at once (file name = player name).</div>' + btn('miss', '📋 Copy names of players without a photo', 'g') +
+        cards.map(function (p) { return '<div class="v5c"><div class="v5f">' + H.face(p, 54, uc.col) + '</div><div class="sp"><b>' + esc(p.n) + '</b><small>' + p.pos + ' · ' + esc(p.nat || '') + ' · ' + p.a + 'y · ' + p.o + '</small></div><button data-v5="ppic" data-k="' + p.id + '">📷</button><button data-v5="pedit" data-k="' + p.id + '">✏️</button></div>'; }).join('') + btn('cust', 'Back', 'g'));
+    }
+    function pedit(p) { box('<h3>' + esc(p.n) + '</h3><label>Name</label><input id="v5n" maxlength="28" value="' + esc(p.n) + '"><label>Nationality</label><select id="v5na">' + natList(p.nat) + '</select><label>Age</label><input id="v5ag" type="number" min="15" max="45" value="' + p.a + '">' + btn('psave', 'Save', '', p.id) + btn('plist', 'Back', 'g')); }
+    function newBox(msg) {
+      var o = {}; Object.keys(H.FORMATIONS).forEach(function (k) { H.FORMATIONS[k].forEach(function (s) { o[s[0]] = 1; }); });
+      box('<h3>Create my own player</h3>' + (msg ? '<div class="v5st">' + esc(msg) + '</div>' : '') + '<label>Name</label><input id="v5n" maxlength="28"><label>Nationality</label><select id="v5na">' + natList('') + '</select><label>Age</label><input id="v5ag" type="number" min="15" max="40" value="19"><label>Position</label><select id="v5ps">' + Object.keys(o).map(function (x) { return '<option>' + x + '</option>'; }).join('') + '</select><label>Overall (40 to 95)</label><input id="v5o" type="number" min="40" max="95" value="70"><label>Potential (40 to 99)</label><input id="v5p" type="number" min="40" max="99" value="82">' + btn('pnew', 'Add to my squad') + btn('cust', 'Back', 'g'));
+    }
+    function addPlayer() {
+      var g = G(), s = S(), uc = H.userClub(g), pos = val('v5ps'), cards = H.userCards(g), nm = val('v5n');
+      if (nm.length < 2) return newBox('Please type a name.');
+      var base = cards.filter(function (p) { return p.pos === pos; })[0] || cards[0]; if (!base) return newBox('There is no squad to copy from.');
+      try { localStorage.setItem(KEY + '_bak32', localStorage.getItem(KEY) || ''); } catch (e) {}
+      var np = JSON.parse(JSON.stringify(base)), mx = 0; s.players.forEach(function (p) { if (p.id > mx) mx = p.id; });
+      var o = clamp(+val('v5o') || 70, 40, 95), pt = clamp(+val('v5p') || o, o, 99), ratio = Math.pow(o / (base.o || 70), 3);
+      np.id = mx + 1; np.n = nm; np.nat = val('v5na'); np.a = clamp(+val('v5ag') || 19, 15, 40); np.pos = pos; np.o = o; np.cl = uc.id; np.g = 0; np.as = 0; np.ap = 0; delete np.img;
+      if (typeof np.p === 'number') np.p = pt; else if (typeof np.pot === 'number') np.pot = pt;
+      ['w', 'v'].forEach(function (k) { if (typeof np[k] === 'number') np[k] = Math.max(0.0001, np[k] * ratio); });
+      if (typeof np.inj === 'number') np.inj = 0;
+      s.players.push(np); if (g.P) g.P[np.id] = np;
+      Object.keys(s).forEach(function (k) { if (/^(nid|nextid|nextpid|pidn|idn|idc)$/i.test(k) && typeof s[k] === 'number' && s[k] <= np.id) s[k] = np.id + 1; });
+      if (!H.userCards(g).some(function (p) { return p.id === np.id; })) { s.players.pop(); if (g.P) delete g.P[np.id]; return newBox('Could not add the player, so nothing was changed.'); }
+      save(); shut(); refresh(); toast(nm + ' joined ' + uc.name);
+    }
+
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-v5]'); if (!b || !G()) return;
+      var q = b.dataset.v5, k = b.dataset.k, g = G(), s = S(), uc = H.userClub(g), a;
+      try {
+        if (q === 'x') shut();
+        else if (q === 'cust') custBox();
+        else if (q === 'staff') staffBox(k == null || k === '' ? null : +k);
+        else if (q === 'sedit') { a = k.split('|'); sedit(+a[0], +a[1]); }
+        else if (q === 'spic') pick(function (u) { V().cp[+k] = u; save(); sedit(Math.floor(k / 10), k % 10); refresh(); });
+        else if (q === 'ssave') { var cn = V().cn[+k] = { n: val('v5n') || undefined, nat: val('v5na') || undefined, a: clamp(+val('v5ag') || 45, 25, 80) }; save(); staffBox(Math.floor(k / 10)); }
+        else if (q === 'club') clubBox();
+        else if (q === 'csave') {
+          var prev = V().club[uc.id] || {}, old = uc.name, nm = val('v5a'), kc = $('#v5k');
+          if (nm.length >= 2) uc.name = nm;
+          V().club[uc.id] = { rn: prev.rn || old, s: val('v5b'), t: val('v5c'), c: +val('v5d') || 0, o: +val('v5e') || 0, g: val('v5g'), nick: val('v5h'), f: val('v5i') };
+          if (kc && kc.value !== kc.dataset.o) uc.col = kc.value;
+          save(); shut(); refresh(); toast('Club saved');
+        }
+        else if (q === 'creset') { var pv = V().club[uc.id]; if (pv && pv.rn) V().club[uc.id] = { rn: pv.rn }; else delete V().club[uc.id]; save(); clubBox(); toast('Real data restored'); }
+        else if (q === 'plist') plBox();
+        else if (q === 'ppic') { var p1 = pl(+k); if (p1) pick(function (u) { p1.img = u; save(); plBox(); refresh(); toast('Photo saved'); }); }
+        else if (q === 'pedit') { var p2 = pl(+k); if (p2) pedit(p2); }
+        else if (q === 'psave') { var p3 = pl(+k); if (p3) { var nn = val('v5n'); if (nn.length >= 2) p3.n = nn; p3.nat = val('v5na') || p3.nat; p3.a = clamp(+val('v5ag') || p3.a, 15, 45); save(); plBox(); refresh(); } }
+        else if (q === 'miss') { var m = H.userCards(g).filter(function (p) { return !p.img; }).map(function (p) { return p.n; }).join('\n'); if (navigator.clipboard) navigator.clipboard.writeText(m).then(function () { toast('Names copied'); }, function () { toast('Could not copy'); }); else toast('Copy is not available'); }
+        else if (q === 'newp') newBox();
+        else if (q === 'pnew') addPlayer();
+      } catch (er) { if (window.console) console.error('HANS FC 3.2 click', er); }
+    });
+    document.addEventListener('change', function (e) { if (e.target && e.target.id === 'v5cl') staffBox(+e.target.value); });
+
+    /* real stadium on the finance and facilities screens, buttons on the Game page */
+    function patch() {
+      try {
+        var s = S(); if (!s || !G()) return; var uc = H.userClub(G()); if (!uc) return; var i = info(uc);
+        var hb = $('#screen .sthd .sp b'); if (hb && i.s && hb.dataset.v5s !== i.s) { hb.dataset.v5s = i.s; hb.textContent = i.s.toUpperCase(); }
+        var bs = document.querySelectorAll('#screen .darkbox > b');
+        for (var n = 0; n < bs.length; n++) { var b = bs[n], d = b.parentNode; if (b.textContent.indexOf('🏟') === 0 && !d.querySelector('.v5x')) { var rows = stadRows(i, 'kv'); if (i.s) b.textContent = '🏟️ ' + i.s.toUpperCase(); if (rows) d.insertAdjacentHTML('beforeend', '<div class="v5x">' + rows + '</div>'); else d.insertAdjacentHTML('beforeend', '<span class="v5x"></span>'); } }
+        var host = $('#screen .v3tools'); if (host && !host.querySelector('[data-v5="cust"]')) host.insertAdjacentHTML('beforeend', '<div class="grid2" style="margin-top:8px"><button class="btn" data-v5="staff">👥 COACHES</button><button class="btn" data-v5="cust">✏️ CUSTOMIZE</button></div>');
+      } catch (e) {}
+    }
+    var scr = document.getElementById('screen');
+    if (scr) new MutationObserver(function () { setTimeout(patch, 150); }).observe(scr, { childList: true });
+    setInterval(patch, 2000);
+    var ob = window.__back; window.__back = function () { if (ov) { shut(); return true; } return ob ? ob() : false; };
+    window.__hfcV5 = { real: real, norm: norm, info: info, staff: staff, cface: cface, ver: VER };
+  } catch (err) { if (window.console) console.error('HANS FC 3.2 add-on failed', err); }
 })();
+
 
 
 

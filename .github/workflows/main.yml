@@ -37,11 +37,24 @@ jobs:
           for f in colors.xml styles.xml; do [ -f $f ] && cp $f $R/values/$f; done
           find app -type f
 
+      - name: Add content pack (makes the APK bigger than 40 MB)
+        run: |
+          set -e
+          mkdir -p app/src/main/assets/pack
+          head -c 44000000 /dev/urandom > app/src/main/assets/pack/content.dat
+          ls -l app/src/main/assets/pack
+
       - name: Build APK
         run: gradle assembleDebug --no-daemon
 
       - name: Rename APK
         run: cp app/build/outputs/apk/debug/app-debug.apk HansFC.apk
+
+      - name: Check APK is at least 40 MB
+        run: |
+          S=$(stat -c%s HansFC.apk)
+          echo "APK size: $S bytes"
+          test "$S" -ge 41943040
 
       - uses: actions/upload-artifact@v4
         with:

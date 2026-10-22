@@ -1085,5 +1085,319 @@
     if (scr) { new MutationObserver(function () { requestAnimationFrame(patch); }).observe(scr, { childList: true }); patch(); }
     try { if (!localStorage.getItem('hansfc_seen_' + VER)) setTimeout(news, 900); } catch (e) {}
   } catch (err) { if (window.console) console.error('HANS FC 3.0 extras failed', err); }
+})();/* ===== HANS FC 3.1.0 add-on. PASTE AT THE VERY END of app.js, BELOW the 3.0.0 block. Do NOT select all. ===== */
+(function () {
+  try {
+    var css = '.v4bg{position:fixed;inset:0;z-index:90;background:#000d;display:grid;place-items:center;padding:12px}.v4box{width:100%;max-width:440px;max-height:90vh;overflow-y:auto;background:#10244a;color:#fff;border:2px solid #2f4fa0;border-radius:10px;padding:14px;font-size:14px}.v4box h3{margin:0 0 8px;font-size:17px}.v4box label{display:block;font-size:12px;color:#9fb9dc;margin:8px 0 3px}.v4box textarea{width:100%;height:60px;border-radius:8px;border:0;padding:8px;font:inherit;background:#fff;color:#0a2e5e}.v4b{display:block;width:100%;margin-top:8px;background:#f58a1f;color:#04122b;border:0;border-radius:6px;padding:11px;font-weight:900;text-transform:uppercase}.v4b.g{background:#1c5aa8;color:#fff}.v4b.s{display:inline-block;width:auto;padding:6px 10px;margin:2px;font-size:12px}.v4r{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px solid #ffffff1c;font-size:13px}.v4r b{text-align:right}.v4s{font-size:12px;color:#b9c9e6}.v4c{background:#0a1f3d;border-radius:8px;padding:8px 10px;margin:6px 0}.v4c.me{border:1px solid #ffc928}.v4pic{width:90px;height:90px;border-radius:50%;overflow:hidden;margin:4px auto;background:#dfe7f2}.v4pic svg,.v4pic img{width:100%;height:100%;object-fit:cover}.v4g{display:grid;grid-template-columns:1fr 1fr;gap:6px}.v4t{font-size:11px;color:#ffc928;text-transform:uppercase;margin:10px 0 2px;font-weight:900}';
+    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+
+    var H = window.HFC, KEY = 'hansfc_save_v2', VER = '3.1.0', ov = null, gate = false, pend = null;
+    var snap = null, msnap = null, tsnap = null, lastWk = -1, lastYr = -1, upts = null, curEv = null;
+    var $ = function (s) { return document.querySelector(s); };
+    var G = function () { return window.__hfc && window.__hfc.G; };
+    var S = function () { var g = G(); return g && g.S; };
+    var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var last = function (n) { var p = String(n).split(' '); return p.length > 1 ? p.slice(1).join(' ') : n; };
+    var rnd = function (a) { return a[Math.floor(Math.random() * a.length)]; };
+    var r1 = function (x) { return Math.round(x * 10) / 10; };
+    var clamp = function (x, a, b) { return Math.max(a, Math.min(b, x)); };
+    var yn = function () { return H.yearName(S().year); };
+    function V() { var s = S(); if (!s) return null; return (s.v4 = s.v4 || { nat: 'England', age: 45, bio: '', img: '', wc: null, wcHist: [], awards: [], recent: [], deals: [], offers: {}, ret: [], yr: 0, ev: 0 }); }
+    function save() { var g = G(); if (g) try { H.save(g, KEY); } catch (e) {} }
+    function news(t, k) { var s = S(); s.news.unshift({ k: k || 'g', t: t, w: s.week, y: s.year }); if (s.news.length > 150) s.news.length = 150; s.unread = (s.unread || 0) + 1; }
+    function refresh() { var t = $('#nav .on'); if (t) t.click(); }
+    function box(html) { if (ov) ov.remove(); ov = document.createElement('div'); ov.className = 'v4bg'; ov.innerHTML = '<div class="v4box">' + html + '</div>'; document.body.appendChild(ov); }
+    function shut() { if (ov) { ov.remove(); ov = null; } }
+    var btn = function (q, t, c, k) { return '<button class="v4b ' + (c || '') + '" data-v4="' + q + '"' + (k != null ? ' data-k="' + esc(k) + '"' : '') + '>' + t + '</button>'; };
+    var row = function (l, r) { return '<div class="v4r"><span>' + l + '</span><b>' + r + '</b></div>'; };
+    var FN = ['Carlos', 'Marco', 'Hans', 'Antoine', 'Diego', 'Luca', 'Mateo', 'Viktor', 'Sven', 'Ruben', 'Tomas', 'Andre'], LN = ['Alvarez', 'Bianchi', 'Keller', 'Moreau', 'Santos', 'Rossi', 'Novak', 'Larsen', 'Duarte', 'Fischer', 'Costa', 'Petrov'];
+    var mgrName = function (id) { return FN[id % 12] + ' ' + LN[(id * 7 + 3) % 12]; };
+    function shrink(f, cb) {
+      var rd = new FileReader(); rd.onerror = function () { cb(null); };
+      rd.onload = function () { var im = new Image(); im.onerror = function () { cb(null); }; im.onload = function () { var c = document.createElement('canvas'), sz = Math.min(im.width, im.height); c.width = c.height = 112; c.getContext('2d').drawImage(im, (im.width - sz) / 2, Math.max(0, (im.height - sz) / 4), sz, sz, 0, 0, 112, 112); cb(c.toDataURL('image/jpeg', 0.75)); }; im.src = rd.result; };
+      rd.readAsDataURL(f);
+    }
+    function pick(cb) { var i = document.createElement('input'); i.type = 'file'; i.accept = 'image/*'; i.onchange = function () { if (i.files && i.files[0]) shrink(i.files[0], cb); }; i.click(); }
+
+    /* manager picture everywhere the game shows the manager */
+    var oldFace = H.face;
+    H.face = function (p, sz, col) { try { var v = V(); if (p && p.id === 4242 && v && v.img) return '<img src="' + v.img + '" style="width:100%;height:100%;object-fit:cover" alt="">'; } catch (e) {} return oldFace.apply(this, arguments); };
+
+    /* ---------- manager profile ---------- */
+    function mgrBox() {
+      var s = S(), v = V(), n = {}; s.players.forEach(function (p) { if (p.nat) n[p.nat] = 1; });
+      box('<h3>Manager profile</h3><div class="v4pic">' + H.face({ id: 4242, n: 'M', nat: v.nat, a: v.age }, 90, '#222a38') + '</div>' + btn('mpic', '📷 Change picture', 'g') +
+        '<label>Name</label><input id="v4n" type="text" maxlength="22" value="' + esc(s.mgr.name) + '"><label>Nationality (the country that may call you up)</label><select id="v4nat">' + Object.keys(n).sort().map(function (x) { return '<option' + (x === v.nat ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + '</select>' +
+        '<label>Age</label><input id="v4age" type="number" min="30" max="75" value="' + v.age + '"><label>About me</label><textarea id="v4bio" maxlength="160">' + esc(v.bio) + '</textarea>' + btn('msave', 'Save') + btn('x', 'Close', 'g'));
+    }
+
+    /* ---------- train a player in a new position ---------- */
+    function positions() { var o = {}; Object.keys(H.FORMATIONS).forEach(function (k) { H.FORMATIONS[k].forEach(function (s) { o[s[0]] = 1; }); }); return Object.keys(o); }
+    function playerByName(n) { var g = G(); return H.userCards(g).filter(function (p) { return p.n === n; })[0]; }
+    function retBox(p) {
+      var v = V(), uc = H.userClub(G()), cur = v.ret.filter(function (r) { return r.id === p.id; })[0];
+      if (cur) return box('<h3>' + esc(p.n) + '</h3><p>Training as <b>' + cur.to + '</b>: ' + cur.wk + ' weeks left.</p>' + btn('x', 'Close', 'g'));
+      var opts = positions().filter(function (x) { return x !== p.pos; }).map(function (x) { var pen = H.penalty(x, p.pos); if (pen >= 30) return ''; var wk = clamp(4 + Math.round(pen / 2), 4, 16), c = r1(0.05 * wk + 0.002 * p.o); return '<div class="v4c"><div class="v4r"><span><b>' + x + '</b> <span class="v4s">' + (pen <= 6 ? 'easy' : pen <= 14 ? 'medium' : 'hard') + ' · ' + wk + ' weeks · €' + c + 'M</span></span>' + btn('rt', 'Train', 's', x + '|' + wk + '|' + c + '|' + pen) + '</div></div>'; }).join('');
+      box('<h3>New position for ' + esc(p.n) + '</h3><p class="v4s">Now ' + p.pos + '. After the training he plays the new position naturally, but a harder switch costs a little rating. Cash ' + H.fm(uc.cash) + '.</p><div id="v4rt" data-id="' + p.id + '">' + (opts || '<p>No realistic option.</p>') + '</div>' + btn('x', 'Close', 'g'));
+    }
+    function retTick() {
+      var s = S(), v = V(), g = G(); v.ret = v.ret.filter(function (r) {
+        var p = g.P[r.id]; if (!p || p.cl !== s.uid) return false;
+        if (--r.wk > 0) return true;
+        p.pos = r.to; p.o = Math.max(40, p.o - Math.min(3, Math.round(r.pen / 8))); news('🔄 ' + p.n + ' has finished retraining and now plays as a ' + r.to + '.', 'g'); return false;
+      });
+    }
+
+    /* ---------- sponsorship hub ---------- */
+    var SL = [['sleeve', 'Sleeve sponsor', 4, ['Skyline Air', 'Nova Telecom', 'Atlas Bank', 'Orbit Energy', 'Zenith Motors']], ['stadium', 'Stadium naming rights', 9, ['Titan', 'Crown Insurance', 'Pioneer Steel', 'Aurora Group', 'Falcon Capital']], ['kit', 'Kit supplier', 6, ['Forma Sport', 'Velo Athletics', 'Stride Pro', 'Kinetic Wear', 'Apex Gear']], ['training', 'Training ground partner', 2.5, ['Vita Health', 'Peak Nutrition', 'Pulse Fitness', 'Granite Tools']], ['partner', 'Official partner', 3, ['QuickPay', 'Harbour Foods', 'Metro Rail', 'SwiftFreight', 'BrightHome']]];
+    function offersFor() {
+      var s = S(), v = V(), uc = H.userClub(G()); if (v.offers.yr === s.year) return v.offers;
+      var o = { yr: s.year }, f = Math.pow(Math.max(40, uc.rep) / 80, 3);
+      SL.forEach(function (x) { o[x[0]] = [0, 1, 2].map(function (i) { return { b: x[3][(Math.floor(Math.random() * 9) + i * 2) % x[3].length], y: 1 + i, a: r1(x[2] * f * (0.85 + Math.random() * 0.3) * (1 + i * 0.05)), t: i === 1 ? 'win' : 'safe' }; }); });
+      return (v.offers = o);
+    }
+    function sponBox() {
+      var s = S(), v = V(), o = offersFor(), tot = 0; v.deals.forEach(function (d) { tot += d.a; });
+      box('<h3>Sponsors hub</h3><p class="v4s">Extra deals on top of your shirt sponsor. Income is paid weekly. Win deals pay less each week but add a bonus for every win. Total now: €' + r1(tot) + 'M a year.</p>' + SL.map(function (x) {
+        var d = v.deals.filter(function (q) { return q.s === x[0]; })[0];
+        return '<div class="v4t">' + x[1] + '</div>' + (d ? '<div class="v4c me">' + row(esc(d.b) + ' (' + (d.t === 'win' ? 'win bonus' : 'fixed') + ')', '€' + d.a + 'M / yr') + '<div class="v4s">Runs until the end of ' + H.yearName(d.u - 1) + '</div></div>' : o[x[0]].map(function (q, i) { return '<div class="v4c"><div class="v4r"><span><b>' + esc(q.b) + '</b><div class="v4s">' + q.y + ' season' + (q.y > 1 ? 's' : '') + ' · ' + (q.t === 'win' ? 'win bonus' : 'fixed') + '</div></span><span>€' + q.a + 'M/yr ' + btn('sg', 'Sign', 's', x[0] + '|' + i) + '</span></div></div>'; }).join(''));
+      }).join('') + btn('x', 'Close', 'g'));
+    }
+    function payDeals() {
+      var s = S(), v = V(), g = G(), uc = H.userClub(g), w = Math.max(1, H.LAST_WEEK || 38), win = false;
+      try { var r = H.table(g, uc.lg).filter(function (x) { return x.user; })[0]; if (r) { win = upts != null && r.pts - upts >= 3; upts = r.pts; } } catch (e) {}
+      v.deals.forEach(function (d) { var p = d.a / w * (d.t === 'win' ? 0.7 : 1) + (d.t === 'win' && win ? d.a / w * 0.9 : 0); uc.cash += p; s.tot.inc.spons += p; });
+    }
+
+    /* ---------- awards ---------- */
+    function snapNow() { var m = {}; S().players.forEach(function (p) { m[p.id] = [p.g || 0, p.as || 0]; }); return m; }
+    function tabSnap() { var s = S(), g = G(), m = {}; try { H.table(g, H.userClub(g).lg).forEach(function (r) { m[r.id] = [r.pts, r.gf - r.ga]; }); } catch (e) {} return m; }
+    function topGain(from) {
+      var s = S(), lg = H.userClub(G()).lg, best = null, bs = 0;
+      s.players.forEach(function (p) { if (p.cl == null || !s.clubs[p.cl] || s.clubs[p.cl].lg !== lg) return; var f = from[p.id] || [0, 0], dg = (p.g || 0) - f[0], da = (p.as || 0) - f[1]; if (dg < 0 || da < 0 || dg + da === 0) return; var sc = dg * 3 + da * 1.5 + p.o / 1000; if (sc > bs) { bs = sc; best = { p: p, g: dg, a: da }; } });
+      return best;
+    }
+    function note(t, me) { var v = V(); v.recent.unshift(t); if (v.recent.length > 14) v.recent.length = 14; news((me ? '⭐ ' : '🏅 ') + t, me ? 'g' : 'w'); }
+    function weekAwards() {
+      var s = S(), g = G(), uc = H.userClub(g), lgn = H.lgOf(uc.lg).name;
+      if (snap) { var b = topGain(snap); if (b) note('Player of the Week (' + lgn + '): ' + b.p.n + ' (' + s.clubs[b.p.cl].name + ') · ' + b.g + ' goals, ' + b.a + ' assists', b.p.cl === s.uid); }
+      snap = snapNow();
+      if (s.week > 0 && s.week % 4 === 0) {
+        if (msnap) {
+          var m = topGain(msnap); if (m) { note('Player of the Month (' + lgn + '): ' + m.p.n + ' (' + s.clubs[m.p.cl].name + ') · ' + m.g + ' goals, ' + m.a + ' assists', m.p.cl === s.uid); if (m.p.cl === s.uid) { s.mgr.xp += 15; } }
+          var bt = null, bv = -1; try { H.table(g, uc.lg).forEach(function (r) { var f = tsnap && tsnap[r.id] || [0, 0], sc = (r.pts - f[0]) * 100 + (r.gf - r.ga - f[1]); if (sc > bv) { bv = sc; bt = r; } }); } catch (e) {}
+          if (bt) { var me = bt.id === s.uid; note('Manager of the Month (' + lgn + '): ' + (me ? s.mgr.name + ' (YOU)' : mgrName(bt.id)) + ' at ' + bt.name, me); if (me) { s.mgr.rep = Math.min(100, s.mgr.rep + 1); s.mgr.xp += 25; } }
+        }
+        msnap = snapNow(); tsnap = tabSnap();
+      }
+    }
+    var PUS = ['a 40-yard volley', 'a solo run past five defenders', 'a bicycle kick', 'a curling free kick from distance', 'a back-heel flick in the box', 'a first-time strike from the halfway line'];
+    function seasonAwards() {
+      var s = S(), g = G(), v = V(), tc = {}, T = function (lg) { return tc[lg] || (tc[lg] = H.table(g, lg)); };
+      var rk = s.players.filter(function (p) { return p.cl != null && s.clubs[p.cl]; }).map(function (p) { var c = s.clubs[p.cl], t = T(c.lg), b = (p.g || 0) * 2 + (p.as || 0) * 1.2 + (p.o - 70) * 0.5; if (t[0] && t[0].id === c.id) b += 6; if (s.cc && s.cc.winner === c.id) b += 8; return { p: p, s: b }; }).sort(function (a, b) { return b.s - a.s; });
+      var it = [], add = function (c, p, extra) { it.push({ c: c, n: p.n, club: s.clubs[p.cl].name, me: p.cl === s.uid, x: extra || '' }); };
+      rk.slice(0, 3).forEach(function (x, i) { add(['Ballon d\'Or', 'Ballon d\'Or runner-up', 'Ballon d\'Or third'][i], x.p, x.p.g + ' goals · ' + x.p.as + ' assists'); });
+      var gb = rk.filter(function (x) { return x.p.a <= 21; })[0]; if (gb) add('Golden Boy (best under 22)', gb.p, gb.p.g + ' goals');
+      var gk = rk.filter(function (x) { return H.GROUP[x.p.pos] === 'G'; }).map(function (x) { var t = T(s.clubs[x.p.cl].lg).slice().sort(function (a, b) { return a.ga - b.ga; }), r = t.map(function (q) { return q.id; }).indexOf(x.p.cl); return { p: x.p, s: x.p.o + (20 - Math.max(0, r)) * 0.3 }; }).sort(function (a, b) { return b.s - a.s; })[0]; if (gk) add('Golden Glove (best goalkeeper)', gk.p, '');
+      var sc = rk.slice().sort(function (a, b) { return (b.p.g || 0) - (a.p.g || 0); }).slice(0, 15).filter(function (x) { return x.p.g > 0; }); if (sc.length) { var q = rnd(sc).p, oc = rnd(H.lgClubs(g, s.clubs[q.cl].lg).filter(function (c) { return c.id !== q.cl; })); add('Puskás Award (goal of the year)', q, rnd(PUS) + (oc ? ' against ' + oc.name : '')); }
+      var bc = null, bo = -99; H.LEAGUES.forEach(function (l) { var t = T(l.id), ex = H.lgClubs(g, l.id).slice().sort(function (a, b) { return b.str - a.str; }).map(function (c) { return c.id; }); t.forEach(function (r, i) { var o = ex.indexOf(r.id) - i + (i === 0 ? 3 : 0) + Math.random() * 0.5; if (o > bo) { bo = o; bc = r; } }); });
+      if (bc) { var me = bc.id === s.uid; it.push({ c: 'Coach of the Year', n: me ? s.mgr.name + ' (YOU)' : mgrName(bc.id), club: bc.name, me: me, x: '' }); }
+      var xi = [], need = { G: 1, D: 4, M: 3, A: 3 }, cnt = { G: 0, D: 0, M: 0, A: 0 }; rk.forEach(function (x) { var k = H.GROUP[x.p.pos]; if (cnt[k] < need[k]) { cnt[k]++; xi.push(x.p); } });
+      return { it: it, xi: xi };
+    }
+    function ceremony() {
+      var s = S(), v = V(), a = seasonAwards(), tot = 0;
+      a.it.forEach(function (x) { if (x.me) { var big = /^Ballon d'Or$|^Coach/.test(x.c); s.mgr.rep = Math.min(100, s.mgr.rep + (big ? 3 : 1)); s.mgr.xp += big ? 120 : 30; news('🏆 ' + x.c + ': ' + x.n + ' (' + x.club + ')', 'g'); } });
+      v.awards.unshift({ y: yn(), it: a.it, xi: a.xi.map(function (p) { return p.n + ' (' + s.clubs[p.cl].name + ')'; }) }); if (v.awards.length > 8) v.awards.length = 8; save();
+      return '<h3>🏆 Awards night · ' + yn() + '</h3>' + a.it.map(function (x) { return '<div class="v4c ' + (x.me ? 'me' : '') + '"><div class="v4t">' + esc(x.c) + '</div><b>' + esc(x.n) + '</b> <span class="v4s">' + esc(x.club) + '</span>' + (x.x ? '<div class="v4s">' + esc(x.x) + '</div>' : '') + '</div>'; }).join('') + '<div class="v4t">Team of the Year</div><div class="v4s">' + a.xi.map(function (p) { return esc(p.n); }).join(' · ') + '</div>';
+    }
+    function awardsBox() {
+      var v = V(); box('<h3>🏅 Awards</h3>' + (v.recent.length ? '<div class="v4t">Recent winners</div>' + v.recent.slice(0, 8).map(function (t) { return '<div class="v4s" style="margin:3px 0">' + esc(t) + '</div>'; }).join('') : '<p class="v4s">Weekly and monthly awards appear here as the season goes on.</p>') + v.awards.map(function (a) { return '<div class="v4t">' + a.y + '</div>' + a.it.map(function (x) { return '<div class="v4r"><span>' + esc(x.c) + '</span><b' + (x.me ? ' style="color:#ffc928"' : '') + '>' + esc(x.n) + '</b></div>'; }).join(''); }).join('') + btn('x', 'Close', 'g'));
+    }
+
+    /* ---------- season moments ---------- */
+    function moment() {
+      var s = S(), v = V(), g = G(), uc = H.userClub(g), cards = H.userCards(g).slice().sort(function (a, b) { return b.o - a.o; }), o = [];
+      var gain = r1((0.4 + Math.random() * 1.2) * Math.max(0.5, uc.rep / 70)), hurt = cards.filter(function (p) { return p.inj > 0; });
+      o.push({ t: 'Local business offer', x: 'A local firm wants to sponsor a fan day at the training ground.', a: ['Accept (+€' + gain + 'M)', function () { uc.cash += gain; s.tot.inc.spons += gain; }], b: ['Decline (fans +2)', function () { s.fanC = Math.min(100, s.fanC + 2); }] });
+      if (cards[0]) o.push({ t: 'Dressing-room row', x: cards[0].n + ' is unhappy with a teammate. How do you handle it?', a: ['Back the star (his morale +8)', function () { cards[0].mo = clamp(cards[0].mo + 8, 1, 100); }], b: ['Back the squad (board +3)', function () { s.board.conf = Math.min(100, s.board.conf + 3); }] });
+      var fa = s.players.filter(function (p) { return p.cl == null; }).sort(function (a, b) { return b.o - a.o; }).slice(0, 6);
+      if (fa.length) { var f = rnd(fa); o.push({ t: 'Scout tip', x: 'A scout recommends the free agent ' + f.n + ' (' + f.pos + ', ' + f.a + ', rated ' + f.o + ').', a: ['Add to shortlist', function () { s.short = s.short || []; if (s.short.indexOf(f.id) < 0) s.short.push(f.id); }], b: ['Ignore', function () {}] }); }
+      if (hurt.length) { var cost = r1(0.8 + hurt.length * 0.4); o.push({ t: 'Medical breakthrough', x: 'A specialist can speed up recovery for your ' + hurt.length + ' injured player(s) for €' + cost + 'M.', a: ['Pay (−2 weeks out)', function () { uc.cash -= cost; hurt.forEach(function (p) { p.inj = Math.max(0, p.inj - 2); }); }], b: ['Not now', function () {}] }); }
+      curEv = rnd(o); v.ev++;
+      box('<h3>⚡ ' + curEv.t + '</h3><p>' + esc(curEv.x) + '</p>' + btn('ea', esc(curEv.a[0])) + btn('eb', esc(curEv.b[0]), 'g'));
+    }
+
+    /* ---------- World Cup and national team job ---------- */
+    function pickXI(l) {
+      var by = { G: [], D: [], M: [], A: [] }, need = { G: 1, D: 4, M: 3, A: 3 }, xi = [], used = {};
+      l.forEach(function (p) { (by[H.GROUP[p.pos]] || by.M).push(p); });
+      ['G', 'D', 'M', 'A'].forEach(function (k) { by[k].slice(0, need[k]).forEach(function (p) { xi.push(p); used[p.id] = 1; }); });
+      l.forEach(function (p) { if (xi.length < 11 && !used[p.id]) { xi.push(p); used[p.id] = 1; } });
+      return xi;
+    }
+    function mkTeam(n, l) {
+      l = l.slice().sort(function (a, b) { return b.o - a.o; });
+      var xi = pickXI(l), av = function (a) { return a.length ? a.reduce(function (s, p) { return s + p.o; }, 0) / a.length : 50; }, grp = function (k) { return xi.filter(function (p) { return H.GROUP[p.pos] === k; }); };
+      return { n: n, att: (av(grp('A')) * 2 + av(grp('M'))) / 3, def: (av(grp('G')) + av(grp('D')) * 2) / 3, ovr: av(xi), xi: xi.map(function (p) { return [p.n, H.GROUP[p.pos], p.o]; }) };
+    }
+    function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+    function newWC(pref) {
+      var s = S(), by = {}; s.players.forEach(function (p) { if (p.nat) (by[p.nat] = by[p.nat] || []).push(p); });
+      var ts = Object.keys(by).filter(function (n) { return by[n].length >= 12; }).map(function (n) { return mkTeam(n, by[n]); }).sort(function (a, b) { return b.ovr - a.ovr; });
+      var N = ts.length >= 32 ? 32 : ts.length >= 16 ? 16 : 0; if (!N) return null;
+      var rep = s.mgr.rep, coach = pref && by[pref] && by[pref].length >= 11 ? pref : (ts[rep >= 75 ? Math.floor(Math.random() * 8) : rep >= 55 ? 8 + Math.floor(Math.random() * 12) : N - 1 - Math.floor(Math.random() * 8)] || ts[0]).n;
+      ts = ts.slice(0, N); if (!ts.some(function (t) { return t.n === coach; }) && by[coach]) ts[N - 1] = mkTeam(coach, by[coach]); ts.sort(function (a, b) { return b.ovr - a.ovr; });
+      var gn = N / 4, pots = [0, 1, 2, 3].map(function (i) { return shuffle(ts.slice(i * gn, (i + 1) * gn).map(function (t) { return t.n; })); }), groups = [], teams = {};
+      ts.forEach(function (t) { teams[t.n] = t; });
+      for (var i = 0; i < gn; i++) groups.push([pots[0][i], pots[1][i], pots[2][i], pots[3][i]]);
+      var fx = [], MD = [[[0, 1], [2, 3]], [[0, 2], [1, 3]], [[0, 3], [1, 2]]];
+      for (var md = 0; md < 3; md++) groups.forEach(function (gr, gi) { MD[md].forEach(function (p) { fx.push({ a: gr[p[0]], b: gr[p[1]], gi: gi, ga: -1, gb: -1 }); }); });
+      return { y: s.year, offer: coach, coach: '', teams: teams, groups: groups, fx: fx, ko: [], ph: 'group', gold: {}, ment: 'balanced', champ: '', runner: '', msg: '' };
+    }
+    function pois(l) { var L = Math.exp(-l), k = 0, p = 1; do { k++; p *= Math.random(); } while (p > L && k < 12); return k - 1; }
+    function scorers(wc, T, n) {
+      var out = [], w = T.xi.map(function (x) { return x[1] === 'A' ? 5 + x[2] / 20 : x[1] === 'M' ? 2 + x[2] / 40 : x[1] === 'D' ? 0.6 : 0; }), tot = w.reduce(function (a, b) { return a + b; }, 0);
+      for (var i = 0; i < n; i++) { var r = Math.random() * tot, j = 0; while (j < w.length - 1 && r > w[j]) { r -= w[j]; j++; } var nm = T.xi[j][0]; out.push(last(nm)); var k = nm + '|' + T.n; wc.gold[k] = (wc.gold[k] || 0) + 1; }
+      return out;
+    }
+    function playF(wc, f, ko) {
+      var A = wc.teams[f.a], B = wc.teams[f.b], la = 1.25 * Math.exp((A.att - B.def) / 18), lb = 1.25 * Math.exp((B.att - A.def) / 18);
+      if (wc.coach === f.a || wc.coach === f.b) { var m = wc.ment === 'attack' ? 1.12 : wc.ment === 'defend' ? 0.88 : 1; la *= m; lb *= m; }
+      f.ga = pois(la); f.gb = pois(lb); f.sa = scorers(wc, A, f.ga); f.sb = scorers(wc, B, f.gb);
+      if (ko) {
+        if (f.ga === f.gb) { var ea = pois(la * 0.33), eb = pois(lb * 0.33); f.ga += ea; f.gb += eb; f.sa = f.sa.concat(scorers(wc, A, ea)); f.sb = f.sb.concat(scorers(wc, B, eb)); f.et = 1; }
+        if (f.ga === f.gb) { var pa = Math.random() < 0.5 + (A.ovr - B.ovr) / 200; f.pen = pa ? [5, 4] : [4, 5]; f.w = pa ? f.a : f.b; } else f.w = f.ga > f.gb ? f.a : f.b;
+      }
+    }
+    function table(wc, gi) {
+      var t = {}; wc.groups[gi].forEach(function (n) { t[n] = { n: n, p: 0, gd: 0, gf: 0, pts: 0 }; });
+      wc.fx.forEach(function (f) { if (f.gi !== gi || f.ga < 0) return; var a = t[f.a], b = t[f.b]; a.p++; b.p++; a.gf += f.ga; b.gf += f.gb; a.gd += f.ga - f.gb; b.gd += f.gb - f.ga; if (f.ga > f.gb) a.pts += 3; else if (f.ga < f.gb) b.pts += 3; else { a.pts++; b.pts++; } });
+      return Object.keys(t).map(function (k) { return t[k]; }).sort(function (a, b) { return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || Math.random() - 0.5; });
+    }
+    var RN = { 8: 'Round of 16', 4: 'Quarter-finals', 2: 'Semi-finals', 1: 'Final' };
+    function buildKO(wc) {
+      var W = [], R = []; wc.groups.forEach(function (g, i) { var t = table(wc, i); W.push(t[0].n); R.push(t[1].n); });
+      var ties = []; for (var i = 0; i < W.length; i += 2) { ties.push({ a: W[i], b: R[i + 1], ga: -1, gb: -1 }); ties.push({ a: W[i + 1], b: R[i], ga: -1, gb: -1 }); }
+      wc.ko = [{ name: RN[ties.length], ties: ties }]; wc.ph = 'ko';
+    }
+    function nextRound(wc) { var w = wc.ko[wc.ko.length - 1].ties.map(function (t) { return t.w; }), ties = []; for (var i = 0; i < w.length; i += 2) ties.push({ a: w[i], b: w[i + 1], ga: -1, gb: -1 }); wc.ko.push({ name: RN[ties.length], ties: ties }); }
+    function reached(wc) {
+      var c = wc.coach; if (!c) return ''; if (wc.champ === c) return 'Champions';
+      var n = '', last_ = null; wc.ko.forEach(function (r) { r.ties.forEach(function (t) { if (t.a === c || t.b === c) last_ = r.name; }); });
+      return last_ ? (last_ === 'Final' ? 'Runners-up' : last_) : 'Group stage';
+    }
+    function finishWC() {
+      var s = S(), v = V(), wc = v.wc, fin = wc.ko[wc.ko.length - 1].ties[0]; wc.ph = 'done'; wc.champ = fin.w; wc.runner = fin.w === fin.a ? fin.b : fin.a;
+      var rch = reached(wc), RW = { 'Group stage': [0.5, 20], 'Round of 16': [1, 40], 'Quarter-finals': [1.5, 80], 'Semi-finals': [2.5, 120], 'Runners-up': [4, 200], 'Champions': [8, 400] };
+      if (wc.coach) { var rw = RW[rch] || [0, 0]; s.mgr.rep = Math.min(100, s.mgr.rep + rw[0]); s.mgr.xp += rw[1]; news('🌍 World Cup ' + wc.y + ': ' + wc.coach + ' finished as ' + rch.toLowerCase() + ' under ' + s.mgr.name + '.', 'g'); }
+      news('🌍 World Cup ' + wc.y + ' winners: ' + wc.champ + '. Runners-up: ' + wc.runner + '.', 'w');
+      v.wcHist.unshift({ y: wc.y, champ: wc.champ, runner: wc.runner, coach: wc.coach, rch: rch }); if (v.wcHist.length > 6) v.wcHist.length = 6;
+    }
+    function stepWC(stop) {
+      var wc = V().wc;
+      for (var n = 0; n < 500; n++) {
+        if (wc.ph === 'group') {
+          var f = wc.fx.filter(function (x) { return x.ga < 0; })[0]; if (!f) { buildKO(wc); continue; }
+          if (stop && wc.coach && (f.a === wc.coach || f.b === wc.coach)) return 'user'; playF(wc, f, false);
+        } else if (wc.ph === 'ko') {
+          var rd = wc.ko[wc.ko.length - 1], t = rd.ties.filter(function (x) { return x.ga < 0; })[0];
+          if (!t) { if (rd.ties.length === 1) { finishWC(); return 'done'; } nextRound(wc); continue; }
+          if (stop && wc.coach && (t.a === wc.coach || t.b === wc.coach)) return 'user'; playF(wc, t, true);
+        } else return 'done';
+      }
+      return 'done';
+    }
+    function mineList(wc) {
+      var c = wc.coach, out = []; if (!c) return out;
+      wc.fx.forEach(function (f) { if (f.ga >= 0 && (f.a === c || f.b === c)) out.push(['Group', f]); });
+      wc.ko.forEach(function (r) { r.ties.forEach(function (t) { if (t.ga >= 0 && (t.a === c || t.b === c)) out.push([r.name, t]); }); });
+      return out;
+    }
+    var fl = function (f) { return esc(f.a) + ' <b>' + f.ga + ' - ' + f.gb + '</b> ' + esc(f.b) + (f.pen ? ' (pens ' + f.pen[0] + '-' + f.pen[1] + ')' : f.et ? ' (aet)' : ''); };
+    function wcBox() {
+      var v = V(), wc = v.wc; if (!wc) return box('<h3>🌍 World Cup</h3><p class="v4s">The next World Cup takes place every fourth summer. Last winners: ' + (v.wcHist[0] ? esc(v.wcHist[0].champ) + ' (' + v.wcHist[0].y + ')' : 'none yet') + '.</p>' + btn('x', 'Close', 'g'));
+      var h = '<h3>🌍 World Cup ' + wc.y + '</h3>', c = wc.coach;
+      if (c) { var T = wc.teams[c]; h += '<div class="v4c me"><b>You coach ' + esc(c) + '</b> <span class="v4s">rating ' + Math.round(T.ovr) + '</span><div class="v4s">Mentality</div>' + ['defend', 'balanced', 'attack'].map(function (m) { return btn('ment', m, wc.ment === m ? '' : 'g s', m).replace('v4b ', 'v4b s '); }).join('') + '</div>'; }
+      if (wc.ph === 'done') h += '<div class="v4c me"><b>🏆 ' + esc(wc.champ) + ' are world champions</b><div class="v4s">Runners-up: ' + esc(wc.runner) + (c ? ' · Your result: ' + reached(wc) : '') + '</div></div>';
+      else h += (c ? btn('wcnext', '▶ Play my next match') : '') + btn('wcall', '⏩ Simulate the rest', 'g');
+      if (wc.msg) h += '<div class="v4c">' + wc.msg + '</div>';
+      var ml = mineList(wc); if (ml.length) h += '<div class="v4t">My matches</div>' + ml.map(function (x) { return '<div class="v4r"><span>' + x[0] + '</span><span>' + fl(x[1]) + '</span></div>'; }).join('');
+      if (wc.ko.length) h += wc.ko.slice().reverse().map(function (r) { return '<div class="v4t">' + r.name + '</div>' + r.ties.map(function (t) { return '<div class="v4s" style="margin:2px 0">' + (t.ga >= 0 ? fl(t) : esc(t.a) + ' v ' + esc(t.b)) + '</div>'; }).join(''); }).join('');
+      h += '<div class="v4t">Groups</div>' + wc.groups.map(function (g, i) { return '<div class="v4c"><div class="v4s">Group ' + String.fromCharCode(65 + i) + '</div>' + table(wc, i).map(function (t) { return '<div class="v4r"' + (t.n === c ? ' style="color:#ffc928"' : '') + '><span>' + esc(t.n) + '</span><b>' + t.pts + ' pts · ' + (t.gd > 0 ? '+' : '') + t.gd + '</b></div>'; }).join('') + '</div>'; }).join('');
+      var gold = Object.keys(wc.gold).map(function (k) { return [k.split('|')[0], k.split('|')[1], wc.gold[k]]; }).sort(function (a, b) { return b[2] - a[2]; }).slice(0, 5);
+      if (gold.length) h += '<div class="v4t">Golden Boot race</div>' + gold.map(function (x) { return row(esc(x[0]) + ' <span class="v4s">' + esc(x[1]) + '</span>', x[2]); }).join('');
+      box(h + btn('x', 'Close', 'g'));
+    }
+    function wcOffer() {
+      var s = S(), v = V(), wc = newWC(v.nat); if (!wc) return; v.wc = wc; save();
+      box('<h3>🌍 The World Cup is here</h3><p>The <b>' + esc(wc.offer) + '</b> football association has been impressed by your work and wants you as national team coach for the World Cup. It runs alongside your club job.</p><div class="v4s">You pick the mentality and play each match. A deep run raises your reputation and manager XP.</div>' + btn('wcyes', 'Accept the job') + btn('wcno', 'Decline and just watch', 'g'));
+    }
+
+    /* ---------- one click handler for everything ---------- */
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-v4]'); if (!b) return;
+      var q = b.dataset.v4, k = b.dataset.k, s = S(), v = V(), g = G(); if (!s) return;
+      if (q === 'x') shut();
+      else if (q === 'mpic') pick(function (u) { v.img = u; save(); mgrBox(); });
+      else if (q === 'msave') { var nm = $('#v4n').value.trim(); if (nm.length >= 2) s.mgr.name = nm; v.nat = $('#v4nat').value; v.age = clamp(+$('#v4age').value || 45, 30, 75); v.bio = $('#v4bio').value.slice(0, 160); save(); shut(); refresh(); }
+      else if (q === 'rt') { var a = k.split('|'), id = +$('#v4rt').dataset.id, p = g.P[id], uc = H.userClub(g), c = +a[2]; if (v.ret.length >= 3) { b.textContent = 'Max 3 at once'; return; } if (uc.cash < c) { b.textContent = 'Not enough cash'; return; } uc.cash -= c; v.ret.push({ id: id, to: a[0], wk: +a[1], pen: +a[3] }); save(); retBox(p); }
+      else if (q === 'sg') { var z = k.split('|'), o = offersFor()[z[0]][+z[1]]; v.deals.push({ s: z[0], b: o.b, a: o.a, t: o.t, u: s.year + o.y }); save(); sponBox(); }
+      else if (q === 'ea' || q === 'eb') { if (curEv) { (q === 'ea' ? curEv.a : curEv.b)[1](); curEv = null; save(); } shut(); refresh(); }
+      else if (q === 'ment') { v.wc.ment = k; save(); wcBox(); }
+      else if (q === 'wcyes') { v.wc.coach = v.wc.offer; save(); wcBox(); }
+      else if (q === 'wcno') { v.wc.coach = ''; stepWC(false); save(); wcBox(); }
+      else if (q === 'wcnext') {
+        var wc = v.wc, r = stepWC(true);
+        if (r === 'user') { var f = wc.ph === 'group' ? wc.fx.filter(function (x) { return x.ga < 0; })[0] : wc.ko[wc.ko.length - 1].ties.filter(function (x) { return x.ga < 0; })[0]; playF(wc, f, wc.ph === 'ko'); wc.msg = '<b>Full time:</b> ' + fl(f) + (f.sa.length + f.sb.length ? '<div class="v4s">' + esc(f.a) + ': ' + (f.sa.join(', ') || '-') + ' · ' + esc(f.b) + ': ' + (f.sb.join(', ') || '-') + '</div>' : ''); }
+        save(); wcBox();
+      }
+      else if (q === 'wcall') { stepWC(false); v.wc.msg = ''; save(); wcBox(); }
+      else if (q === 'awgo') { shut(); if (pend) { gate = true; pend.click(); gate = false; pend = null; } }
+      else if (q === 'tool') { if (k === 'mgr') mgrBox(); else if (k === 'spon') sponBox(); else if (k === 'aw') awardsBox(); else if (k === 'wc') wcBox(); }
+    });
+
+    /* season-end awards before the review */
+    document.addEventListener('click', function (e) {
+      if (gate || ov) return; var b = e.target.closest('#screen [data-act="endseason"]'); if (!b || !G()) return;
+      try { var h = ceremony(); pend = b; box(h + btn('awgo', 'Continue to season review')); e.stopPropagation(); e.preventDefault(); } catch (er) { shut(); pend = null; }
+    }, true);
+
+    /* after every Advance: weekly work */
+    function weekTick() {
+      var s = S(), v = V(); if (!s || !v) return;
+      try {
+        if (s.year !== lastYr) { v.deals = v.deals.filter(function (d) { return d.u > s.year; }); v.ev = 0; lastYr = s.year; snap = msnap = null; }
+        retTick(); payDeals(); weekAwards();
+        if (s.stage === 'week' && v.ev < 5 && Math.random() < 0.18 && !ov) setTimeout(moment, 700);
+        save(); refresh();
+      } catch (e) { if (window.console) console.error('weekTick', e); }
+    }
+    document.addEventListener('click', function (e) { if (e.target.closest('#screen [data-act="advance"]')) setTimeout(weekTick, 80); });
+
+    /* World Cup summer: after a season ending in a World Cup year, at the next pre-season */
+    setInterval(function () {
+      var s = S(); if (!s || ov) return; var v = V();
+      if (snap == null && s.players) { snap = snapNow(); msnap = snapNow(); tsnap = tabSnap(); lastYr = s.year; }
+      if (s.stage === 'pre' && s.hist && s.hist.length && (s.year - 1) % 4 === 1 && !(v.wc && v.wc.y === s.year) && v.wcDone !== s.year) { v.wcDone = s.year; wcOffer(); }
+    }, 1500);
+
+    /* buttons inside the Game page and the player sheet */
+    function patch() {
+      var host = $('#screen .v3tools'); if (!host) { var r = $('#screen [data-act="renclub"]'); if (r && !$('#screen .v4tools')) { host = document.createElement('div'); host.className = 'v3tools v4tools'; r.parentNode.after(host); } }
+      if (host && !host.querySelector('[data-k="mgr"]')) host.insertAdjacentHTML('beforeend', '<div class="grid2" style="margin-top:8px"><button class="btn" data-v4="tool" data-k="mgr">👔 MANAGER</button><button class="btn" data-v4="tool" data-k="wc">🌍 WORLD CUP</button></div><div class="grid2" style="margin-top:8px"><button class="btn ghost" data-v4="tool" data-k="spon">🤝 SPONSORS</button><button class="btn ghost" data-v4="tool" data-k="aw">🏅 AWARDS</button></div>');
+      var sh = $('#layer .sheet'); if (sh && sh.querySelector('[data-x="release"]') && !sh.querySelector('.v4rt')) {
+        var h2 = sh.querySelector('h2'), p = h2 && playerByName(h2.textContent), cur = p && V().ret.filter(function (r) { return r.id === p.id; })[0];
+        if (p) { var d = document.createElement('div'); d.className = 'v4rt'; d.innerHTML = '<button class="btn ghost full" style="margin-top:8px" data-v4r="1">🔄 ' + (cur ? 'TRAINING AS ' + cur.to + ' (' + cur.wk + 'W)' : 'TRAIN NEW POSITION') + '</button>'; sh.appendChild(d); d.firstChild.onclick = function () { var l = $('#layer .sheetbg'); retBox(p); }; }
+      }
+    }
+    var scr = document.getElementById('screen'), lay = document.getElementById('layer');
+    if (scr) new MutationObserver(function () { requestAnimationFrame(patch); }).observe(scr, { childList: true });
+    if (lay) new MutationObserver(function () { requestAnimationFrame(patch); }).observe(lay, { childList: true });
+    var ob = window.__back; window.__back = function () { if (ov) { shut(); return true; } return ob ? ob() : false; };
+    try { if (!localStorage.getItem('hansfc_seen_' + VER)) { localStorage.setItem('hansfc_seen_' + VER, '1'); setTimeout(function () { if (!ov) box('<h3>HANS FC ' + VER + '</h3><ul style="padding-left:18px;line-height:1.4"><li>Weekly and monthly awards: Player of the Week and Month, Manager of the Month</li><li>Awards night at season end: Ballon d\'Or, Golden Boy, Golden Glove, Puskás, Coach of the Year, Team of the Year</li><li>World Cup every four years, with a call-up to coach a country</li><li>Train a player in a new position (open a player)</li><li>Manager profile with your own picture and nationality</li><li>More sponsors: sleeve, stadium, kit, training ground, partners</li><li>Random season moments to decide</li></ul><p class="v4s">Find the extras in Menu, Settings and More, under Game.</p>' + btn('x', 'Close')); }, 1500); } } catch (e) {}
+    window.__hfcV4 = { newWC: newWC, stepWC: stepWC, reached: reached, V: V, f: { ceremony: ceremony, offersFor: offersFor, weekAwards: weekAwards, payDeals: payDeals, retTick: retTick, moment: moment, mgrBox: mgrBox, sponBox: sponBox, awardsBox: awardsBox, wcBox: wcBox, wcOffer: wcOffer, retBox: retBox, weekTick: weekTick } };
+  } catch (err) { if (window.console) console.error('HANS FC 3.1 add-on failed', err); }
 })();
+
 

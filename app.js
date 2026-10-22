@@ -1398,6 +1398,125 @@
     try { if (!localStorage.getItem('hansfc_seen_' + VER)) { localStorage.setItem('hansfc_seen_' + VER, '1'); setTimeout(function () { if (!ov) box('<h3>HANS FC ' + VER + '</h3><ul style="padding-left:18px;line-height:1.4"><li>Weekly and monthly awards: Player of the Week and Month, Manager of the Month</li><li>Awards night at season end: Ballon d\'Or, Golden Boy, Golden Glove, Puskás, Coach of the Year, Team of the Year</li><li>World Cup every four years, with a call-up to coach a country</li><li>Train a player in a new position (open a player)</li><li>Manager profile with your own picture and nationality</li><li>More sponsors: sleeve, stadium, kit, training ground, partners</li><li>Random season moments to decide</li></ul><p class="v4s">Find the extras in Menu, Settings and More, under Game.</p>' + btn('x', 'Close')); }, 1500); } } catch (e) {}
     window.__hfcV4 = { newWC: newWC, stepWC: stepWC, reached: reached, V: V, f: { ceremony: ceremony, offersFor: offersFor, weekAwards: weekAwards, payDeals: payDeals, retTick: retTick, moment: moment, mgrBox: mgrBox, sponBox: sponBox, awardsBox: awardsBox, wcBox: wcBox, wcOffer: wcOffer, retBox: retBox, weekTick: weekTick } };
   } catch (err) { if (window.console) console.error('HANS FC 3.1 add-on failed', err); }
+})();/* ===== HANS FC 3.3.0 add-on: MY PLAYING STYLES. PASTE AT THE VERY END of app.js, BELOW the 3.2.0 block. Do NOT select all. ===== */
+(function () {
+  try {
+    var css = '.v6bg{position:fixed;inset:0;z-index:96;background:#000d;display:grid;place-items:center;padding:12px}.v6box{width:100%;max-width:440px;max-height:90vh;overflow-y:auto;background:#10244a;color:#fff;border:2px solid #2f4fa0;border-radius:10px;padding:14px;font-size:14px}.v6box h3{margin:0 0 8px;font-size:17px}.v6box label{display:block;font-size:12px;color:#9fb9dc;margin:8px 0 3px}.v6box input,.v6box select{width:100%;box-sizing:border-box;padding:8px;border-radius:6px;border:1px solid #3a5aa8;background:#0b1a38;color:#fff;font-size:15px}.v6b{display:block;width:100%;margin-top:8px;padding:10px;border:0;border-radius:6px;background:#2f6bff;color:#fff;font-weight:700;font-size:14px}.v6b.g{background:#2a3d66}.v6b.r{background:#a02a3a}.v6st{background:#0b1a38;border:1px solid #2f4fa0;border-radius:8px;padding:8px 10px;margin:8px 0;font-size:13px;line-height:1.4}.v6c{display:flex;align-items:center;gap:6px;padding:9px 0;border-bottom:1px solid #1d3a73}.v6c .t{flex:1;min-width:0}.v6c small{display:block;color:#9fb9dc;font-size:11px;line-height:1.35}.v6c button{border:0;border-radius:6px;background:#2a3d66;color:#fff;padding:8px 9px;font-size:14px}.v6c button.go{background:#2f6bff}.v6g{color:#5fd68a}.v6o{color:#f0c35a}.v6w{color:#ff8a8a}';
+    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+
+    var H = window.HFC, KEY = 'hansfc_save_v2', VER = '3.3.0', ov = null;
+    var $ = function (s) { return document.querySelector(s); };
+    var G = function () { return window.__hfc && window.__hfc.G; };
+    var S = function () { var g = G(); return g && g.S; };
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var cap = function (v) { v = String(v == null ? '' : v); return v ? v[0].toUpperCase() + v.slice(1) : v; };
+    function V() { var s = S(); return s ? (s.v6 = s.v6 || { st: [] }) : null; }
+    function save() { var g = G(); if (g) try { H.save(g, KEY); } catch (e) {} }
+    function refresh() { var t = $('#nav .on'); if (t) t.click(); }
+    function toast(t) { var e = document.getElementById('toast'); if (e) { e.textContent = t; e.className = 'on'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.className = ''; }, 2200); } }
+    function box(html) { if (ov) ov.remove(); ov = document.createElement('div'); ov.className = 'v6bg'; ov.innerHTML = '<div class="v6box">' + html + '</div>'; document.body.appendChild(ov); }
+    function shut() { if (ov) { ov.remove(); ov = null; } }
+    var btn = function (q, t, c, k) { return '<button class="v6b ' + (c || '') + '" data-v6="' + q + '"' + (k != null ? ' data-k="' + esc(k) + '"' : '') + '>' + t + '</button>'; };
+    var val = function (id) { var e = $('#' + id); return e ? e.value.trim() : ''; };
+    var opts = function (arr, cur) { return (arr || []).map(function (v) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(cap(v)) + '</option>'; }).join(''); };
+    var desc = function (o) { return esc(o.f) + ' · ' + esc(cap(o.m)) + ' · ' + esc(cap(o.s)) + ' · ' + esc(cap(o.p)) + ' pressing'; };
+
+    /* ---------- squad fit: how well your players suit a formation and a style (an estimate) ---------- */
+    function grp(pos) { var x = H.GROUP && H.GROUP[pos]; return x === 'G' || x === 'D' || x === 'M' ? x : 'F'; }
+    function weights(o) {
+      var s = String(o.s).toLowerCase(), m = String(o.m).toLowerCase(), w;
+      if (/poss|short|pass|tiki/.test(s)) w = { G: 0.08, D: 0.25, M: 0.45, F: 0.22 };
+      else if (/count|break|fast/.test(s)) w = { G: 0.08, D: 0.34, M: 0.2, F: 0.38 };
+      else if (/direct|long|rout/.test(s)) w = { G: 0.08, D: 0.28, M: 0.16, F: 0.48 };
+      else w = { G: 0.08, D: 0.3, M: 0.32, F: 0.3 };
+      if (/attack/.test(m)) { w.F += 0.08; w.D -= 0.08; } else if (/defen|park/.test(m)) { w.D += 0.08; w.F -= 0.08; }
+      return w;
+    }
+    function fit(o) {
+      var sl = H.FORMATIONS && H.FORMATIONS[o.f]; if (!sl) return null;
+      var cards = H.userCards(G()).filter(function (p) { return !p.out; }), used = {}, out = [], rest = [];
+      sl.forEach(function (x, i) { var b = null; cards.forEach(function (p) { if (!used[p.id] && p.pos === x[0] && (!b || p.o > b.o)) b = p; }); if (b) { used[b.id] = 1; out[i] = { e: b.o, nat: true, pos: x[0] }; } else rest.push(i); });
+      rest.forEach(function (i) { var x = sl[i], b = null, be = -999; cards.forEach(function (p) { if (used[p.id]) return; var e = p.o - (grp(p.pos) === grp(x[0]) ? 6 : 18) - ((grp(x[0]) === 'G') !== (grp(p.pos) === 'G') ? 30 : 0); if (e > be) { be = e; b = p; } }); if (b) { used[b.id] = 1; out[i] = { e: be, nat: false, pos: x[0] }; } else out[i] = { e: 30, nat: false, pos: x[0] }; });
+      var sum = {}, cnt = {}, tot = 0, miss = [];
+      out.forEach(function (r) { var g = grp(r.pos); sum[g] = (sum[g] || 0) + r.e; cnt[g] = (cnt[g] || 0) + 1; tot += r.e; if (!r.nat && miss.indexOf(r.pos) < 0) miss.push(r.pos); });
+      var avg = {}, w = weights(o), score = 0, ws = 0;
+      ['G', 'D', 'M', 'F'].forEach(function (g) { if (cnt[g]) { avg[g] = sum[g] / cnt[g]; score += avg[g] * w[g]; ws += w[g]; } });
+      score = ws ? score / ws : 0;
+      return { score: Math.round(score), delta: score - tot / out.length, avg: avg, miss: miss };
+    }
+    function fitHtml(o) {
+      var r; try { r = fit(o); } catch (e) { r = null; } if (!r) return '<small>Fit unavailable</small>';
+      var lab = r.delta >= 1 ? ['Good fit', 'v6g'] : r.delta >= -1 ? ['OK fit', 'v6o'] : ['Weak fit', 'v6w'], a = r.avg;
+      return '<span class="' + lab[1] + '"><b>' + lab[0] + ' · ' + r.score + '</b></span> · Def ' + Math.round(a.D || 0) + ' · Mid ' + Math.round(a.M || 0) + ' · Att ' + Math.round(a.F || 0) + (r.miss.length ? '<br>No natural player for: ' + esc(r.miss.slice(0, 4).join(', ')) : '');
+    }
+
+    /* ---------- screens ---------- */
+    function cur() { var s = S(); return { f: s.formation, m: s.mentality, s: s.style, p: s.press }; }
+    function stylesBox() {
+      var v = V(), c = cur();
+      box('<h3>🎯 My playing styles</h3><div class="v6st"><b>Playing now:</b> ' + desc(c) + '<br>' + fitHtml(c) + '</div>' + (v.st.length < 8 ? btn('new', '➕ Create a new style') : '') + btn('sug', '💡 Suggest a style for my squad', 'g') +
+        (v.st.length ? v.st.map(function (o) { return '<div class="v6c"><div class="t"><b>' + esc(o.n) + '</b><small>' + desc(o) + '</small>' + (o.d ? '<small><i>' + esc(o.d) + '</i></small>' : '') + '<small>' + fitHtml(o) + '</small></div><button class="go" data-v6="apply" data-k="' + o.id + '">▶</button><button data-v6="edit" data-k="' + o.id + '">✏️</button></div>'; }).join('') : '<p style="font-size:12px;color:#9fb9dc">No saved styles yet. Create one to name your own way of playing and use it with one tap.</p>') + btn('x', 'Close', 'g'));
+    }
+    function editBox(o) {
+      var isNew = !o.id;
+      box('<h3>' + (isNew ? 'Create a style' : 'Edit style') + '</h3><label>Name</label><input id="v6n" maxlength="24" value="' + esc(o.n || '') + '" placeholder="For example: Fast counter"><label>My idea (optional)</label><input id="v6d" maxlength="70" value="' + esc(o.d || '') + '" placeholder="Win the ball, hit the wingers"><label>Formation</label><select id="v6f">' + opts(Object.keys(H.FORMATIONS), o.f) + '</select><label>Mentality</label><select id="v6m">' + opts(H.MENTALITY, o.m) + '</select><label>Style of play</label><select id="v6s">' + opts(H.STYLE, o.s) + '</select><label>Pressing</label><select id="v6p">' + opts(H.PRESS, o.p) + '</select><div class="v6st" id="v6fit"></div>' +
+        btn('save', 'Save', '', o.id || '') + btn('saveap', 'Save and play this way', '', o.id || '') + (isNew ? '' : btn('del', 'Delete this style', 'r', o.id)) + btn('list', 'Back', 'g'));
+      fitLive();
+    }
+    function fitLive() { var e = $('#v6fit'); if (e) e.innerHTML = fitHtml({ f: val('v6f'), m: val('v6m'), s: val('v6s'), p: val('v6p') }); }
+    function read(id) {
+      var o = { id: id || Date.now().toString(36), n: val('v6n'), d: val('v6d'), f: val('v6f'), m: val('v6m'), s: val('v6s'), p: val('v6p') };
+      if (o.n.length < 2) o.n = 'My style ' + (V().st.length + 1); return o;
+    }
+    function put(o) { var v = V(), i = -1; v.st.forEach(function (x, n) { if (x.id === o.id) i = n; }); if (i >= 0) v.st[i] = o; else v.st.push(o); save(); }
+    function apply(o) {
+      var g = G(), s = S(); if (!H.FORMATIONS[o.f]) return toast('That formation is not available');
+      if (s.formation !== o.f) H.setFormation(g, o.f);
+      if (H.MENTALITY.indexOf(o.m) >= 0) s.mentality = o.m; if (H.STYLE.indexOf(o.s) >= 0) s.style = o.s; if (H.PRESS.indexOf(o.p) >= 0) s.press = o.p;
+      save(); shut(); refresh(); toast('Playing: ' + o.n);
+    }
+    function suggest() {
+      var c = cur(), res = [];
+      Object.keys(H.FORMATIONS).forEach(function (f) { H.STYLE.forEach(function (sy) { var o = { f: f, m: c.m, s: sy, p: c.p }, r = fit(o); if (r) res.push({ o: o, sc: r.score, d: r.delta }); }); });
+      res.sort(function (a, b) { return b.sc - a.sc; });
+      box('<h3>💡 Best fits for your squad</h3><p style="font-size:12px;color:#9fb9dc;margin:0">Based on your players’ ratings and positions. This is an estimate, not a promise.</p>' + res.slice(0, 3).map(function (r) { return '<div class="v6c"><div class="t"><b>' + esc(r.o.f) + ' · ' + esc(cap(r.o.s)) + '</b><small>' + fitHtml(r.o) + '</small></div><button class="go" data-v6="use" data-k="' + esc(r.o.f + '|' + r.o.s) + '">Use</button></div>'; }).join('') + btn('list', 'Back', 'g'));
+    }
+
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-v6]'); if (!b || !G()) return;
+      var q = b.dataset.v6, k = b.dataset.k, v = V(), o, a;
+      var find = function (id) { return v.st.filter(function (x) { return x.id === id; })[0]; };
+      try {
+        if (q === 'x') shut();
+        else if (q === 'styles' || q === 'list') stylesBox();
+        else if (q === 'new') { o = cur(); o.n = ''; o.d = ''; editBox(o); }
+        else if (q === 'edit') { o = find(k); if (o) editBox(o); }
+        else if (q === 'save') { put(read(k || null)); stylesBox(); toast('Style saved'); }
+        else if (q === 'saveap') { o = read(k || null); put(o); apply(o); }
+        else if (q === 'del') { v.st = v.st.filter(function (x) { return x.id !== k; }); save(); stylesBox(); toast('Style deleted'); }
+        else if (q === 'apply') { o = find(k); if (o) apply(o); }
+        else if (q === 'sug') suggest();
+        else if (q === 'use') { a = k.split('|'); o = cur(); o.f = a[0]; o.s = a[1]; o.n = 'Suggested ' + a[0]; o.d = ''; editBox(o); }
+      } catch (er) { if (window.console) console.error('HANS FC 3.3 click', er); }
+    });
+    document.addEventListener('change', function (e) { if (e.target && /^v6[fmsp]$/.test(e.target.id || '')) fitLive(); });
+
+    /* buttons: Squad > Tactics and the Game page */
+    function patch() {
+      try {
+        if (!S() || !G()) return;
+        var tb = $('#screen [data-act="tac"][data-k="mentality"]'), d = tb && tb.closest('.darkbox');
+        if (d && !d.querySelector('[data-v6="styles"]')) d.insertAdjacentHTML('beforeend', '<button class="btn full" style="margin-top:10px" data-v6="styles">🎯 MY PLAYING STYLES</button>');
+        var host = $('#screen .v3tools'); if (host && !host.querySelector('[data-v6="styles"]')) host.insertAdjacentHTML('beforeend', '<button class="btn full" style="margin-top:8px" data-v6="styles">🎯 MY PLAYING STYLES</button>');
+      } catch (e) {}
+    }
+    var scr = document.getElementById('screen');
+    if (scr) new MutationObserver(function () { setTimeout(patch, 200); }).observe(scr, { childList: true });
+    setInterval(patch, 2000);
+    var ob = window.__back; window.__back = function () { if (ov) { shut(); return true; } return ob ? ob() : false; };
+    window.__hfcV6 = { fit: fit, ver: VER };
+  } catch (err) { if (window.console) console.error('HANS FC 3.3 add-on failed', err); }
 })();
+
 
 

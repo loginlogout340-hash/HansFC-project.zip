@@ -1709,7 +1709,153 @@
     var ob = window.__back; window.__back = function () { if (ov) { shut(); return true; } return ob ? ob() : false; };
     window.__hfcV5 = { real: real, norm: norm, info: info, staff: staff, cface: cface, ver: VER };
   } catch (err) { if (window.console) console.error('HANS FC 3.2 add-on failed', err); }
+})();/* ===== HANS FC 3.4.0 add-on: PLAYER TRAINING, BOOSTERS, PLAYSTYLES, GAME PLANS. PASTE AT THE VERY END of app.js, BELOW the 3.3.0 block. Do NOT select all. ===== */
+(function () {
+  try {
+    var css = '.v7bg{position:fixed;inset:0;z-index:97;background:#000d;display:grid;place-items:center;padding:12px}.v7box{width:100%;max-width:440px;max-height:90vh;overflow-y:auto;background:#10244a;color:#fff;border:2px solid #2f4fa0;border-radius:10px;padding:14px;font-size:14px}.v7box h3{margin:0 0 8px;font-size:17px}.v7box label{display:block;font-size:12px;color:#9fb9dc;margin:8px 0 3px}.v7box select{width:100%;box-sizing:border-box;padding:8px;border-radius:6px;border:1px solid #3a5aa8;background:#0b1a38;color:#fff;font-size:14px}.v7b{display:block;width:100%;margin-top:8px;padding:10px;border:0;border-radius:6px;background:#2f6bff;color:#fff;font-weight:700;font-size:14px}.v7b.g{background:#2a3d66}.v7b[disabled]{opacity:.4}.v7st{background:#0b1a38;border:1px solid #2f4fa0;border-radius:8px;padding:8px 10px;margin:8px 0;font-size:13px;line-height:1.45}.v7c{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #1d3a73}.v7c .t{flex:1;min-width:0}.v7c small{display:block;color:#9fb9dc;font-size:11px;line-height:1.35}.v7c button{border:0;border-radius:6px;background:#2f6bff;color:#fff;padding:8px 10px;font-size:13px;font-weight:700}.v7c button[disabled]{background:#2a3d66;opacity:.5}.v7f{width:46px;height:46px;border-radius:50%;overflow:hidden;flex:none;background:#c9d3e2;border:2px solid #4a6bc0}.v7g{color:#5fd68a}.v7o{color:#f0c35a}.v7w{color:#ff8a8a}.v7c select{width:auto;max-width:150px;padding:6px;font-size:12px}';
+    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+
+    var H = window.HFC, KEY = 'hansfc_save_v2', VER = '3.4.0', ov = null, sel = null;
+    var $ = function (s) { return document.querySelector(s); };
+    var G = function () { return window.__hfc && window.__hfc.G; };
+    var S = function () { var g = G(); return g && g.S; };
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var cap = function (v) { v = String(v == null ? '' : v); return v ? v[0].toUpperCase() + v.slice(1) : v; };
+    function V() { var s = S(); if (!s) return null; if (!s.v7) s.v7 = { tp: 100, t: {}, ps: {}, bo: { fit: 1, train: 1, pot: 0 }, half: false, ly: s.year, lw: s.week }; return s.v7; }
+    function save() { var g = G(); if (g) try { H.save(g, KEY); } catch (e) {} }
+    function refresh() { var t = $('#nav .on'); if (t) t.click(); }
+    function toast(t) { var e = document.getElementById('toast'); if (e) { e.textContent = t; e.className = 'on'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.className = ''; }, 2200); } }
+    function box(html) { if (ov) ov.remove(); ov = document.createElement('div'); ov.className = 'v7bg'; ov.innerHTML = '<div class="v7box">' + html + '</div>'; document.body.appendChild(ov); }
+    function shut() { if (ov) { ov.remove(); ov = null; } }
+    var btn = function (q, t, c, k, off) { return '<button class="v7b ' + (c || '') + '" data-v7="' + q + '"' + (k != null ? ' data-k="' + esc(k) + '"' : '') + (off ? ' disabled' : '') + '>' + t + '</button>'; };
+    function grp(pos) { var x = H.GROUP && H.GROUP[pos]; return x === 'G' || x === 'D' || x === 'M' ? x : 'F'; }
+    var squad = function () { return H.userCards(G()).filter(function (p) { return !p.out; }).sort(function (a, b) { return b.o - a.o; }); };
+    var kit = function () { var uc = H.userClub(G()); return uc && uc.col; };
+
+    /* ---------- playstyles ---------- */
+    var PS = { GK: ['Offensive Goalkeeper', 'Defensive Goalkeeper'], CB: ['Build Up', 'Destroyer', 'Extra Frontman'], FB: ['Offensive Full-back', 'Defensive Full-back', 'Full-back Finisher'], DM: ['Anchor Man', 'Destroyer', 'Orchestrator'], CM: ['Box-to-Box', 'Orchestrator', 'Hole Player'], AM: ['Classic No. 10', 'Hole Player', 'Creative Playmaker'], WG: ['Prolific Winger', 'Roaming Flank', 'Cross Specialist'], ST: ['Goal Poacher', 'Fox in the Box', 'Target Man', 'Dummy Runner', 'Deep-lying Forward'] };
+    function role(pos) {
+      pos = String(pos).toUpperCase();
+      if (/GK/.test(pos)) return 'GK'; if (/WB|LB|RB/.test(pos)) return 'FB'; if (/CB|SW/.test(pos)) return 'CB'; if (/DM/.test(pos)) return 'DM'; if (/AM/.test(pos)) return 'AM'; if (/LW|RW|LM|RM|^W/.test(pos)) return 'WG'; if (/CM|MF|^M$/.test(pos)) return 'CM'; if (/ST|CF|FW|SS/.test(pos)) return 'ST';
+      var g = grp(pos); return g === 'G' ? 'GK' : g === 'D' ? 'CB' : g === 'M' ? 'CM' : 'ST';
+    }
+    function pstyle(p) { var o = V().ps[p.id], l = PS[role(p.pos)]; return o && l.indexOf(o) >= 0 ? o : l[(p.id * 7 + 3) % l.length]; }
+
+    /* ---------- game plans ---------- */
+    var PLANS = [
+      { n: 'Possession Game', d: 'Keep the ball and build patiently through midfield.', w: { G: 0.08, D: 0.25, M: 0.45, F: 0.22 }, m: /balanc|normal|standard/, s: /poss|short|pass|tiki/, p: /med|mid|normal/, t: ['Orchestrator', 'Build Up', 'Box-to-Box', 'Creative Playmaker', 'Hole Player', 'Classic No. 10', 'Offensive Goalkeeper', 'Deep-lying Forward'] },
+      { n: 'Quick Counter', d: 'Win it back high and hit the space behind fast.', w: { G: 0.08, D: 0.3, M: 0.2, F: 0.42 }, m: /balanc|normal|standard/, s: /count|break|fast/, p: /high/, t: ['Prolific Winger', 'Roaming Flank', 'Goal Poacher', 'Fox in the Box', 'Dummy Runner', 'Destroyer', 'Anchor Man'] },
+      { n: 'Long Ball Counter', d: 'Sit deep, win it, then go long to the front line.', w: { G: 0.1, D: 0.38, M: 0.14, F: 0.38 }, m: /defen|park/, s: /direct|long|rout/, p: /low/, t: ['Target Man', 'Extra Frontman', 'Destroyer', 'Defensive Goalkeeper', 'Anchor Man', 'Goal Poacher', 'Defensive Full-back'] },
+      { n: 'Out Wide', d: 'Stretch the pitch and deliver crosses from both flanks.', w: { G: 0.08, D: 0.26, M: 0.26, F: 0.4 }, m: /attack/, s: /wide|wing|cross|direct/, p: /med|mid|normal/, t: ['Prolific Winger', 'Cross Specialist', 'Roaming Flank', 'Offensive Full-back', 'Full-back Finisher', 'Target Man', 'Fox in the Box'] },
+      { n: 'Long Ball', d: 'Go direct. Target the striker and chase knock-downs.', w: { G: 0.08, D: 0.28, M: 0.16, F: 0.48 }, m: /attack|balanc/, s: /direct|long|rout/, p: /low|med|mid/, t: ['Target Man', 'Extra Frontman', 'Dummy Runner', 'Box-to-Box', 'Goal Poacher', 'Fox in the Box', 'Offensive Goalkeeper'] }
+    ];
+    var pickv = function (arr, re, cur) { var r = (arr || []).filter(function (v) { return re.test(String(v).toLowerCase()); })[0]; return r || cur; };
+    function xi(f) {
+      var sl = H.FORMATIONS && H.FORMATIONS[f]; if (!sl) return null;
+      var cards = squad(), used = {}, out = [], rest = [];
+      sl.forEach(function (x, i) { var b = null; cards.forEach(function (p) { if (!used[p.id] && p.pos === x[0] && (!b || p.o > b.o)) b = p; }); if (b) { used[b.id] = 1; out[i] = { p: b, e: b.o, nat: true, pos: x[0] }; } else rest.push(i); });
+      rest.forEach(function (i) { var x = sl[i], b = null, be = -999; cards.forEach(function (p) { if (used[p.id]) return; var e = p.o - (grp(p.pos) === grp(x[0]) ? 6 : 18) - ((grp(x[0]) === 'G') !== (grp(p.pos) === 'G') ? 30 : 0); if (e > be) { be = e; b = p; } }); if (b) used[b.id] = 1; out[i] = { p: b, e: b ? be : 30, nat: false, pos: x[0] }; });
+      return out;
+    }
+    function planFit(pl, f) {
+      var o = xi(f); if (!o) return null; var sum = {}, cnt = {}, tot = 0, chem = 0;
+      o.forEach(function (r) { var g = grp(r.pos); sum[g] = (sum[g] || 0) + r.e; cnt[g] = (cnt[g] || 0) + 1; tot += r.e; if (r.p && pl.t.indexOf(pstyle(r.p)) >= 0) chem++; });
+      var sc = 0, ws = 0; ['G', 'D', 'M', 'F'].forEach(function (g) { if (cnt[g]) { sc += (sum[g] / cnt[g]) * pl.w[g]; ws += pl.w[g]; } });
+      sc = ws ? sc / ws : 0; return { f: f, score: Math.round(sc), delta: sc - tot / o.length, chem: chem, n: o.length };
+    }
+    function bestPlan(pl) { var b = null; Object.keys(H.FORMATIONS).forEach(function (f) { var r = planFit(pl, f); if (r && (!b || r.score + r.chem * 0.6 > b.score + b.chem * 0.6)) b = r; }); return b; }
+    function applyPlan(i) {
+      var g = G(), s = S(), pl = PLANS[i], b = bestPlan(pl); if (!b) return toast('Could not apply that plan');
+      if (s.formation !== b.f) H.setFormation(g, b.f);
+      s.mentality = pickv(H.MENTALITY, pl.m, s.mentality); s.style = pickv(H.STYLE, pl.s, s.style); s.press = pickv(H.PRESS, pl.p, s.press);
+      save(); shut(); refresh(); toast(pl.n + ' · ' + b.f);
+    }
+    function plansBox() {
+      box('<h3>🧠 Manager game plans</h3><p style="font-size:12px;color:#9fb9dc;margin:0">Each plan picks the formation that suits your squad best and sets mentality, style and pressing. Playstyle match shows how many of the eleven suit it.</p>' +
+        PLANS.map(function (pl, i) {
+          var b = bestPlan(pl), lab = !b ? ['', ''] : b.delta >= 1 ? ['Good fit', 'v7g'] : b.delta >= -1 ? ['OK fit', 'v7o'] : ['Weak fit', 'v7w'];
+          return '<div class="v7c"><div class="t"><b>' + pl.n + '</b><small>' + pl.d + '</small>' + (b ? '<small>' + esc(b.f) + ' · <span class="' + lab[1] + '"><b>' + lab[0] + ' ' + b.score + '</b></span> · Playstyle match ' + b.chem + '/' + b.n + '</small>' : '') + '</div><button data-v7="plan" data-k="' + i + '">▶</button></div>';
+        }).join('') + btn('ps', '🎭 Playstyles of my players', 'g') + btn('x', 'Close', 'g'));
+    }
+    function psBox() {
+      var uc = kit();
+      box('<h3>🎭 Playstyles</h3><p style="font-size:12px;color:#9fb9dc;margin:0">Choose each player’s playstyle. It feeds the playstyle match in the game plans.</p>' + squad().map(function (p) {
+        var cur = pstyle(p); return '<div class="v7c"><div class="v7f">' + H.face(p, 46, uc) + '</div><div class="t"><b>' + esc(p.n) + '</b><small>' + p.pos + ' · ' + p.o + '</small></div><select data-v7ps="' + p.id + '">' + PS[role(p.pos)].map(function (x) { return '<option' + (x === cur ? ' selected' : '') + '>' + x + '</option>'; }).join('') + '</select></div>';
+      }).join('') + btn('plans', 'Back', 'g'));
+    }
+
+    /* ---------- training points and boosters ---------- */
+    function lv(p) { var t = V().t[p.id], y = S().year; return t && t.y === y ? t.l : 0; }
+    function cost(p) { return Math.round((30 + 15 * lv(p) + Math.max(0, p.o - 70) * 3) * (V().half ? 0.5 : 1)); }
+    function maxed(p) { return typeof p.p === 'number' ? p.o >= Math.min(99, p.p) : p.o >= 99; }
+    function trainBox() {
+      var v = V(), uc = kit();
+      box('<h3>🏋️ Player training</h3><div class="v7st"><b>' + v.tp + ' Training Points</b>' + (v.half ? ' · <span class="v7g">Training Boost on: next level half price</span>' : '') + '<br>Earn 25 points every week you play. Up to 5 levels per player each season. A level adds +1 overall.</div>' + btn('boost', '⚡ Boosters and shop', 'g') + squad().map(function (p) {
+        var c = cost(p), l = lv(p), off = l >= 5 || maxed(p) || v.tp < c;
+        return '<div class="v7c"><div class="v7f">' + H.face(p, 46, uc) + '</div><div class="t"><b>' + esc(p.n) + '</b><small>' + p.pos + ' · ' + p.o + ' · ' + esc(pstyle(p)) + '</small><small>' + (maxed(p) ? 'At potential' : 'Trained ' + l + '/5 this season') + '</small></div><button data-v7="up" data-k="' + p.id + '"' + (off ? ' disabled' : '') + '>⬆ ' + (l >= 5 || maxed(p) ? '–' : c) + '</button></div>';
+      }).join('') + btn('x', 'Close', 'g'));
+    }
+    function up(p) {
+      var v = V(), y = S().year, t = v.t[p.id] = v.t[p.id] || { y: y, l: 0 };
+      if (t.y !== y) { t.y = y; t.l = 0; }
+      if (t.l >= 5) return toast('Maximum 5 levels this season'); if (maxed(p)) return toast('Already at potential');
+      var c = cost(p); if (v.tp < c) return toast('Not enough Training Points');
+      v.tp -= c; v.half = false; p.o += 1; t.l++; save(); trainBox(); refresh();
+    }
+    var SHOP = { fit: ['⚡ Fitness Booster', 'Restores a player to full fitness', 40], train: ['⏩ Training Boost', 'Next training level costs half', 60], pot: ['★ Potential Booster', 'Raises a player’s potential by 2', 150] };
+    function boostBox() {
+      var v = V(), hasPot = squad().some(function (p) { return typeof p.p === 'number'; });
+      box('<h3>⚡ Boosters</h3><div class="v7st"><b>' + v.tp + ' Training Points</b></div><label>Player</label><select id="v7pl">' + squad().map(function (p) { return '<option value="' + p.id + '"' + (sel === p.id ? ' selected' : '') + '>' + esc(p.n) + ' (' + p.o + ')</option>'; }).join('') + '</select>' +
+        Object.keys(SHOP).filter(function (k) { return k !== 'pot' || hasPot; }).map(function (k) {
+          var s = SHOP[k]; return '<div class="v7c"><div class="t"><b>' + s[0] + ' ×' + v.bo[k] + '</b><small>' + s[1] + '</small></div><button data-v7="use" data-k="' + k + '"' + (v.bo[k] < 1 ? ' disabled' : '') + '>Use</button><button data-v7="buy" data-k="' + k + '"' + (v.tp < s[2] ? ' disabled' : '') + '>' + s[2] + '</button></div>';
+        }).join('') + btn('train', 'Back', 'g'));
+    }
+    function useBoost(k) {
+      var v = V(), e = $('#v7pl'), id = e ? +e.value : null, p = squad().filter(function (x) { return x.id === id; })[0];
+      if (v.bo[k] < 1) return toast('None left');
+      if (k === 'train') { if (v.half) return toast('Already active'); v.half = true; }
+      else if (!p) return toast('Choose a player');
+      else if (k === 'fit') { if (typeof p.ft === 'number' && p.ft >= 100) return toast(p.n + ' is already fully fit'); p.ft = 100; }
+      else if (k === 'pot') { if (typeof p.p !== 'number') return toast('Not available for this player'); p.p = Math.min(99, p.p + 2); }
+      v.bo[k]--; sel = id; save(); boostBox(); refresh(); toast('Booster used');
+    }
+    function buy(k) { var v = V(), c = SHOP[k][2], e = $('#v7pl'); if (e) sel = +e.value; if (v.tp < c) return toast('Not enough Training Points'); v.tp -= c; v.bo[k]++; save(); boostBox(); }
+
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-v7]'); if (!b || !G()) return;
+      var q = b.dataset.v7, k = b.dataset.k, p;
+      try {
+        if (q === 'x') shut(); else if (q === 'train') trainBox(); else if (q === 'plans') plansBox(); else if (q === 'ps') psBox(); else if (q === 'boost') boostBox();
+        else if (q === 'plan') applyPlan(+k); else if (q === 'use') useBoost(k); else if (q === 'buy') buy(k);
+        else if (q === 'up') { p = squad().filter(function (x) { return x.id === +k; })[0]; if (p) up(p); }
+      } catch (er) { if (window.console) console.error('HANS FC 3.4 click', er); }
+    });
+    document.addEventListener('change', function (e) { var id = e.target && e.target.dataset && e.target.dataset.v7ps; if (id && G()) { V().ps[+id] = e.target.value; save(); } });
+
+    /* 25 Training Points for every week that passes */
+    function tick() {
+      try {
+        var s = S(); if (!s || !G()) return; var v = V(), n = (s.year - v.ly) * (H.LAST_WEEK || 38) + (s.week - v.lw);
+        if (n > 0) { n = Math.min(n, 10); v.tp += 25 * n; v.ly = s.year; v.lw = s.week; save(); toast('+' + 25 * n + ' Training Points'); }
+        else if (n < 0) { v.ly = s.year; v.lw = s.week; }
+      } catch (e) {}
+    }
+    function patch() {
+      try {
+        if (!S() || !G()) return;
+        var tb = $('#screen [data-act="tac"][data-k="mentality"]'), d = tb && tb.closest('.darkbox');
+        if (d && !d.querySelector('[data-v7="plans"]')) d.insertAdjacentHTML('beforeend', '<button class="btn full" style="margin-top:10px" data-v7="plans">🧠 MANAGER GAME PLANS</button>');
+        var host = $('#screen .v3tools'); if (host && !host.querySelector('[data-v7="train"]')) host.insertAdjacentHTML('beforeend', '<div class="grid2" style="margin-top:8px"><button class="btn" data-v7="train">🏋️ TRAINING</button><button class="btn" data-v7="plans">🧠 GAME PLANS</button></div>');
+      } catch (e) {}
+    }
+    var scr = document.getElementById('screen');
+    if (scr) new MutationObserver(function () { setTimeout(patch, 250); }).observe(scr, { childList: true });
+    setInterval(function () { tick(); patch(); }, 1500);
+    var ob = window.__back; window.__back = function () { if (ov) { shut(); return true; } return ob ? ob() : false; };
+    window.__hfcV7 = { role: role, pstyle: pstyle, planFit: planFit, bestPlan: bestPlan, ver: VER };
+  } catch (err) { if (window.console) console.error('HANS FC 3.4 add-on failed', err); }
 })();
+
 
 
 

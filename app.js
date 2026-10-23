@@ -2064,7 +2064,406 @@
     var ob = window.__back; window.__back = function () { if (ov) { shut(); return true; } return ob ? ob() : false; };
     window.__hfcV8 = { nk: nk, find: find, build: build, counts: counts, attach: attach, soften: soften, moreAwards: moreAwards, ver: VER };
   } catch (err) { if (window.console) console.error('HANS FC 3.5 add-on failed', err); }
+})();/* ===== HANS FC 3.6.0 add-on: CLUB HUB WITH COACH PICTURES, SELL PLAYERS (CHOOSE HOW MANY), TEAM OF THE WEEK. PASTE AT THE VERY END of app.js, BELOW the 3.5.0 block. Do NOT select all. ===== */
+(function () {
+  try {
+    var css = [
+      '.v9bg{position:fixed;inset:0;z-index:98;background:#000d;display:grid;place-items:center;padding:10px}',
+      '.v9box{width:100%;max-width:460px;max-height:92vh;overflow-y:auto;background:#10244a;color:#fff;border:2px solid #2f4fa0;border-radius:10px;padding:12px;font-size:14px;line-height:1.35}',
+      '.v9box h3{margin:0 0 6px;font-size:18px}',
+      '.v9b{display:block;width:100%;margin-top:8px;padding:11px;border:0;border-radius:7px;background:#f58220;color:#1a1200;font-weight:800;font-size:14px}',
+      '.v9b.g{background:#2a3d66;color:#fff}.v9b.r{background:#a02a3a;color:#fff}.v9b:disabled{opacity:.45}',
+      '.v9st{background:#0b1a38;border:1px solid #2f4fa0;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:13px}',
+      '.v9warn{background:#3a2a0a;border:1px solid #c98a1a;color:#ffd78a;border-radius:8px;padding:8px 10px;margin:6px 0;font-size:12px}',
+      '.v9lbl{font-size:12px;color:#9fb9dc;margin:10px 0 4px;font-weight:700;letter-spacing:.4px}',
+      '.v9step{display:flex;align-items:center;gap:10px}.v9step button{width:48px;height:48px;border:0;border-radius:8px;background:#2f6bff;color:#fff;font-size:26px;font-weight:800}.v9step b{flex:1;text-align:center;font-size:32px}.v9step small{display:block;font-size:11px;color:#9fb9dc;font-weight:400}',
+      '.v9chips{display:flex;flex-wrap:wrap;gap:6px}.v9chips button{border:1px solid #3d5fb0;background:#0b1a38;color:#cfe0ff;border-radius:16px;padding:7px 11px;font-size:12px;font-weight:700}.v9chips button.on{background:#f58220;border-color:#f58220;color:#1a1200}',
+      '.v9sr{display:flex;align-items:center;gap:8px;background:#0b1a38;border:1px solid #223a73;border-radius:8px;padding:6px 8px;margin-top:6px}.v9sr.on{border-color:#f58220;background:#2a2412}',
+      '.v9ck{width:22px;height:22px;border-radius:50%;border:2px solid #4a639f;display:grid;place-items:center;font-style:normal;font-size:13px;color:transparent;flex:none}.v9sr.on .v9ck{background:#f58220;border-color:#f58220;color:#1a1200}',
+      '.v9f{width:44px;height:44px;border-radius:50%;overflow:hidden;background:#cfd8e8;flex:none}.v9f.sm{width:38px;height:38px}.v9f.md{width:56px;height:56px}.v9f.big{width:72px;height:72px}.v9f svg,.v9f img{width:100%;height:100%;display:block;object-fit:cover}',
+      '.v9sm{flex:1;min-width:0}.v9sm b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v9sm small{color:#9fb9dc;font-size:11px}',
+      '.v9sv{text-align:right;min-width:54px}.v9sv b{display:block;color:#ffd24a;font-size:16px}.v9sv small{color:#9fb9dc;font-size:11px}',
+      '.v9tg{font-size:9px;font-weight:800;background:#2f6bff;color:#fff;border-radius:4px;padding:1px 4px;margin-left:4px}.v9tg.b{background:#6b7a99}.v9tg.i{background:#c23a3a}',
+      '.v9hd2{display:flex;align-items:center;justify-content:space-between;gap:8px}.v9hd2 h3{margin:0}.v9x{width:36px;height:36px;border:0;border-radius:50%;background:#2a3d66;color:#fff;font-size:16px;flex:none}.v9two{display:grid;grid-template-columns:1fr 1.7fr;gap:8px}.v9two .v9b{margin-top:6px;padding:10px 6px;font-size:13px}.v9warn.s{padding:4px 8px;margin:0 0 4px}.v9foot{position:sticky;bottom:-12px;background:#10244a;margin:10px -12px -12px;padding:6px 12px 10px;border-top:1px solid #2f4fa0}',
+      '.v9q{display:flex;align-items:center;gap:8px;background:#0b1a38;border:1px solid #223a73;border-radius:8px;padding:7px 8px;margin-top:6px}.v9q.no{opacity:.6}',
+      '.v9q .v9sv b{color:#6ee08a}.v9q.no .v9sv b{color:#ff8a8a;font-size:12px}',
+      '#screen.v9on>:not(.tabs2):not(.v9hub){display:none!important}',
+      '.v9hub{color:#fff;padding-bottom:16px}',
+      '.v9hd{display:flex;align-items:center;gap:10px;background:#fff;color:#10244a;border-radius:10px;padding:8px 10px;margin:8px 0}.v9hd .sp{flex:1;min-width:0}.v9hd b{display:block;font-size:20px;font-weight:900;text-transform:uppercase;line-height:1.1}.v9hd small{color:#5a6b8c;font-weight:700}',
+      '.v9cr{width:46px;height:46px;flex:none}.v9ovr{min-width:50px;text-align:center;background:linear-gradient(#ecc95e,#b8902a);color:#fff;font-weight:900;font-size:28px;border-radius:7px;padding:2px 6px;text-shadow:0 1px 2px #0006}',
+      '.v9rows{display:grid;gap:6px;margin:8px 0}.v9ir{display:flex;align-items:center;gap:10px;background:#1c5fb4;border:1px solid #3d7fd6;border-radius:8px;padding:9px 11px;font-weight:700;font-size:14px}.v9ir i{font-style:normal;width:22px;text-align:center}',
+      '.v9tiles{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px;margin:8px 0}.v9tile{min-width:0;display:flex;align-items:center;gap:8px;background:#1c5fb4;border:1px solid #3d7fd6;border-radius:8px;padding:8px;min-height:58px}.v9tile .t{flex:1;min-width:0}.v9tile small{display:block;font-size:11px;color:#bcd6ff;font-weight:800;letter-spacing:.4px}.v9tile b{display:block;font-size:12px;line-height:1.15;max-height:2.3em;overflow:hidden;word-break:break-word}.v9tile .v9f{width:38px;height:38px}',
+      '.v9g{font-style:normal;flex:none;background:linear-gradient(#ecc95e,#b8902a);color:#fff;font-weight:900;font-size:17px;border-radius:6px;padding:2px 6px;text-shadow:0 1px 2px #0006}',
+      '.v9card{background:#123a78;border:1px solid #2f5fb0;border-radius:10px;padding:10px;margin:10px 0}.v9ttl{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}.v9ttl b{font-size:16px;font-weight:900;letter-spacing:.3px}.v9ttl em{font-style:normal;font-size:11px;color:#bcd6ff}',
+      '.v9staff{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.v9sc{text-align:center;background:#0e2d60;border-radius:8px;padding:8px 4px}.v9sc .v9f{margin:0 auto 4px;width:60px;height:60px}.v9sc b{display:block;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v9sc small{font-size:10px;color:#9fb9dc}',
+      '.v9bar1{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12px;font-weight:700}.v9bar1 span{flex:0 0 132px;line-height:1.15}.v9seg{flex:1;display:flex;gap:3px}.v9seg i{flex:1;height:14px;border-radius:2px;background:#0b2a55}.v9seg i.on{background:#27d24a}',
+      '.v9wide{display:block;width:100%;margin-top:8px;padding:10px;border:0;border-radius:7px;background:#2f6bff;color:#fff;font-weight:800;font-size:14px}',
+      '.v9rels{display:flex;justify-content:space-around;margin-top:4px}.v9rel{text-align:center;position:relative}.v9rel .v9f{width:78px;height:78px;margin:0 auto}.v9rel i{position:absolute;right:-4px;bottom:16px;font-style:normal;background:#c0392b;color:#fff;font-weight:900;font-size:15px;border-radius:4px;padding:1px 6px}.v9rel small{display:block;font-size:11px;font-weight:800;color:#bcd6ff;margin-top:3px}',
+      '.v9yp{display:flex;align-items:center;gap:8px;background:#0e2d60;border-radius:8px;padding:6px 8px;margin-top:5px}.v9yp .sp{flex:1;min-width:0}.v9yp b{display:block;font-size:13px}.v9yp small{font-size:11px;color:#9fb9dc}.v9yp em{font-style:normal;font-weight:900;color:#ffd24a}',
+      '.v9grp{font-size:12px;font-weight:900;letter-spacing:.5px;color:#bcd6ff;margin:14px 0 6px}',
+      '.v9grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.v9t{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:64px;border:0;border-radius:8px;background:#f58220;color:#1a1200;font-weight:800;font-size:12px;padding:8px 4px;text-align:center;line-height:1.15}.v9t span{font-size:22px;line-height:1}.v9t.g{background:#1c5fb4;color:#fff}.v9t.r{background:#c0392b;color:#fff}',
+      '.v9cl button,.v9bar button{display:block;width:100%;margin:8px 0;padding:11px;border:0;border-radius:8px;background:#f58220;color:#1a1200;font-weight:900;font-size:14px}.v9cl button{background:#2a3d66;color:#fff;font-size:12px}',
+      '.v9th{text-align:center;background:#fff;color:#10244a;border-radius:8px;padding:6px;margin-bottom:8px}.v9th b{display:block;font-size:20px;font-weight:900}.v9th small{font-weight:700;color:#5a6b8c}',
+      '.v9pitch{position:relative;height:540px;border-radius:8px;overflow:hidden;background:repeating-linear-gradient(#2f7d3a 0 54px,#348a42 54px 108px);border:2px solid #1d5a2a}',
+      '.v9pitch:before{content:"";position:absolute;left:0;right:0;top:50%;height:2px;background:#ffffff55}.v9pitch:after{content:"";position:absolute;left:50%;top:50%;width:90px;height:90px;margin:-45px 0 0 -45px;border:2px solid #ffffff55;border-radius:50%}',
+      '.v9pp{position:absolute;transform:translate(-50%,-50%);width:84px;text-align:center}.v9pp .v9f{margin:0 auto;border:2px solid #fff}.v9pn{background:#0c1d3acc;border-radius:5px;padding:1px 3px;margin-top:2px}.v9pn b{display:block;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v9pn small{display:block;font-size:9px;color:#bcd6ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.v9pp em{position:absolute;top:-4px;right:6px;font-style:normal;font-size:10px;background:#0c1d3a;border-radius:8px;padding:0 4px}',
+      '.v9pm{display:flex;align-items:center;gap:10px;background:#0b1a38;border:1px solid #2f4fa0;border-radius:8px;padding:6px 10px;margin-bottom:8px}.v9pm .v9f{border:2px solid #ffd24a;width:46px;height:46px}.v9pm small{display:block;font-size:10px;color:#ffd24a;font-weight:800;letter-spacing:.5px}.v9pm b{display:block;font-size:14px}.v9pm span{font-size:12px;color:#9fb9dc}',
+      '.v9subs{display:flex;gap:6px;justify-content:space-between;background:#0b1a38;border-radius:8px;padding:8px 4px;margin-top:8px}.v9subs .v9pp{position:static;transform:none;width:20%}'
+    ].join('');
+    var st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+
+    var H = window.HFC, KEY = 'hansfc_save_v2', VER = '3.6.0', CLK = 'hansfc_hub_classic', SEEN = 'hansfc_seen_3.6.0', ov = null;
+    var $ = function (s) { return document.querySelector(s); };
+    var G = function () { return window.__hfc && window.__hfc.G; };
+    var S = function () { var g = G(); return g && g.S; };
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var fm = function (v) { return H.fm(v); };
+    var ord = function (n) { return n + (n % 100 >= 11 && n % 100 <= 13 ? 'th' : n % 10 === 1 ? 'st' : n % 10 === 2 ? 'nd' : n % 10 === 3 ? 'rd' : 'th'); };
+    var last = function (n) { var p = String(n).split(' '); return p.length > 1 ? p.slice(1).join(' ') : String(n); };
+    var short = function (n) { n = String(n); return n.charAt(0) + '.' + last(n); };
+    var rnd = function () { return H.rand ? H.rand() : Math.random(); };
+    var V = function () { var s = S(); return s ? (s.v9 = s.v9 || {}) : null; };
+    var V5 = function () { return window.__hfcV5; };
+    function save() { var g = G(); if (g) try { H.save(g, KEY); } catch (e) {} }
+    function refresh() { var t = $('#nav .on'); if (t) t.click(); }
+    function toast(t) { var e = document.getElementById('toast'); if (e) { e.textContent = t; e.className = 'on'; clearTimeout(toast.t); toast.t = setTimeout(function () { e.className = ''; }, 2400); } }
+    function box(html, keepScroll) {
+      var keep = keepScroll && ov && ov.firstChild ? ov.firstChild.scrollTop : 0;
+      if (ov) ov.remove();
+      ov = document.createElement('div'); ov.className = 'v9bg'; ov.innerHTML = '<div class="v9box">' + html + '</div>';
+      document.body.appendChild(ov);
+      if (keep) ov.firstChild.scrollTop = keep;
+    }
+    function shut() { if (ov) { ov.remove(); ov = null; } }
+    var btn = function (q, t, c, k, dis) { return '<button class="v9b ' + (c || '') + '" data-v9="' + q + '"' + (k != null ? ' data-k="' + esc(k) + '"' : '') + (dis ? ' disabled' : '') + '>' + t + '</button>'; };
+    function pface(p, sz) { var s = S(), c = p && p.cl != null && s.clubs[p.cl] ? s.clubs[p.cl].col : '#556070'; try { return H.face(p, sz || 44, c); } catch (e) { return ''; } }
+    function classic() { try { return localStorage.getItem(CLK) === '1'; } catch (e) { return false; } }
+    function setClassic(v) { try { if (v) localStorage.setItem(CLK, '1'); else localStorage.removeItem(CLK); } catch (e) {} }
+
+    /* =====================================================================
+       1. COACHES: portraits for the manager and the five staff of any club
+       ===================================================================== */
+    var ROLE_SHORT = ['Manager', 'Assistant', 'GK coach', 'Fitness', 'Head scout', 'Physio'];
+    function coach(c, n) {
+      var v = V5(); if (!v || !v.staff) return null;
+      try {
+        var m = v.staff(c, n);
+        var fp = (n === 0 && m.mine) ? { id: 4242, n: 'M', nat: m.nat, a: m.a } : { ck: m.key, rk: m.rk, nat: m.nat, a: m.a };
+        return { m: m, fp: fp };
+      } catch (e) { return null; }
+    }
+
+    /* =====================================================================
+       2. CLUB HUB (replaces the long button list on the Game page)
+       ===================================================================== */
+    var lvScore = function (l) { return Math.min(99, Math.round(45 + l * 5.4)); };
+    function ratings(g) {
+      var uc = H.userClub(g), s = g.S, sq = H.userEval(g).vector.rating, mg = Math.max(1, Math.min(99, Math.round(s.mgr.rep)));
+      var stf = lvScore((uc.fac[1] + uc.fac[3]) / 2), ac = lvScore(uc.fac[2]);
+      return { squad: sq, mgr: mg, staff: stf, acad: ac, all: Math.round((sq * 2 + mg + stf + ac) / 5) };
+    }
+    var GROUPS = [
+      ['⚽ MATCHDAY AND COMPETITION', [['🏋️', 'Training', 'data-v7="train"'], ['🧠', 'Game plans', 'data-v7="plans"'], ['🎯', 'Playing styles', 'data-v6="styles"'], ['⭐', 'Team of the week', 'data-v9="totw"'], ['🏅', 'Awards', 'data-v4="tool" data-k="aw"'], ['🌍', 'World Cup', 'data-v4="tool" data-k="wc"']]],
+      ['🏛️ CLUB', [['👔', 'Manager', 'data-v4="tool" data-k="mgr"'], ['👥', 'Coaches', 'data-v5="staff"'], ['🤝', 'Sponsors', 'data-v4="tool" data-k="spon"'], ['✏️', 'Customize', 'data-v5="cust"'], ['✏️', 'Rename club', 'data-act="renclub"'], ['🛡️', 'Upgrade badge', 'data-act="clubimg"']]],
+      ['💷 PLAYERS AND TRANSFERS', [['💷', 'Sell players', 'data-v9="sell"'], ['📷', 'Player pictures', 'data-v8="photos"'], ['🖼️', 'Import photos', 'data-v3="imp"']]],
+      ['⚙️ GAME', [['💾', 'Save now', 'data-act="saveb"'], ['📦', 'Back up', 'data-v3="bak"'], ['♻️', 'Restore', 'data-v3="res"'], ['🆕', 'What’s new', 'data-v3="new"'], ['💡', 'Hints and tips', 'data-act="hints"'], ['🗑️', 'Restart game', 'data-act="reset"', 'r']]]
+    ];
+    function hubHTML(g) {
+      var s = g.S, uc = H.userClub(g), r = ratings(g), lg = H.lgOf(uc.lg), pos = s.week >= 2 ? H.position(g, uc.lg, uc.id) : 0;
+      var v5 = V5(), info = (v5 && v5.info) ? v5.info(uc) : {}, cards = H.userCards(g);
+      var stad = info.s || (uc.name + ' Stadium'), cap = Math.round(H.stadiumCap(uc) * 1000);
+      var irow = function (ic, t) { return '<div class="v9ir"><i>' + ic + '</i><span>' + t + '</span></div>'; };
+      var h = '<div class="v9hub">';
+      h += '<div class="v9hd"><div class="v9cr">' + H.crest(uc, 46) + '</div><div class="sp"><b>' + esc(uc.name) + '</b><small>' + (pos ? ord(pos) + ' · ' : '') + esc(lg ? lg.name : '') + '</small></div><div class="v9ovr">' + r.all + '</div></div>';
+      h += '<div class="v9rows">' + irow('🏟️', esc(stad)) + irow('👥', cap.toLocaleString('en-US') + ' seats') + irow('💷', fm(uc.cash) + ' available') + irow('🤝', s.sponsor ? esc(s.sponsor.name) : 'No shirt sponsor yet') + (s.obj ? irow('🎯', esc(s.obj.text)) : '') + '</div>';
+      var cm = coach(uc, 0), mname = cm ? cm.m.n : s.mgr.name;
+      h += '<div class="v9tiles">' +
+        '<div class="v9tile" data-v4="tool" data-k="mgr">' + (cm ? '<div class="v9f">' + H.face(cm.fp, 38, uc.col) + '</div>' : '<i style="font-size:24px;font-style:normal">👔</i>') + '<div class="t"><small>MANAGER</small><b>' + esc(mname) + '</b></div><i class="v9g">' + r.mgr + '</i></div>' +
+        '<div class="v9tile" data-v5="staff"><i style="font-size:24px;font-style:normal">👥</i><div class="t"><small>STAFF</small><b>Coaches</b></div><i class="v9g">' + r.staff + '</i></div>' +
+        '<div class="v9tile" data-act="tab" data-v="squad"><i style="font-size:24px;font-style:normal">⚽</i><div class="t"><small>SQUAD</small><b>' + cards.length + ' players</b></div><i class="v9g">' + r.squad + '</i></div>' +
+        '<div class="v9tile" data-act="cbgo" data-v="fac"><i style="font-size:24px;font-style:normal">🎓</i><div class="t"><small>ACADEMY</small><b>Level ' + uc.fac[2] + '</b></div><i class="v9g">' + r.acad + '</i></div></div>';
+      if (cm) {
+        h += '<div class="v9card"><div class="v9ttl"><b>👥 COACHING STAFF</b><em>tap a coach to edit</em></div><div class="v9staff">';
+        for (var n = 0; n < 6; n++) { var c = coach(uc, n); if (!c) continue; h += '<div class="v9sc" data-v5="sedit" data-k="' + uc.id + '|' + n + '"><div class="v9f">' + H.face(c.fp, 60, uc.col) + '</div><b>' + esc(short(c.m.n)) + '</b><small>' + ROLE_SHORT[n] + '</small></div>'; }
+        h += '</div></div>';
+      }
+      h += '<div class="v9card"><div class="v9ttl"><b>🏟️ FACILITIES</b><em>level out of 10</em></div>';
+      H.FAC.forEach(function (f, i) { var seg = ''; for (var k = 0; k < 10; k++) seg += '<i class="' + (k < uc.fac[i] ? 'on' : '') + '"></i>'; h += '<div class="v9bar1"><span>' + f.icon + ' ' + esc(f.name) + '</span><div class="v9seg">' + seg + '</div></div>'; });
+      h += '<button class="v9wide" data-act="cbgo" data-v="fac">VIEW FACILITIES</button></div>';
+      var board = Math.round(s.board.conf), fans = Math.round(s.fanC == null ? 50 : s.fanC), mood = cards.length ? Math.round(cards.reduce(function (m, p) { return m + (p.mo || 65); }, 0) / cards.length) : 65;
+      var star = cards.slice().sort(function (a, b) { return b.o - a.o; })[0];
+      h += '<div class="v9card"><div class="v9ttl"><b>RELATIONSHIPS</b></div><div class="v9rels">' +
+        '<div class="v9rel" data-act="cbgo" data-v="board"><div class="v9f">' + H.face({ id: 12, n: 'b', nat: 'England', a: 60 }, 78, '#d8dde5') + '</div><i>' + board + '</i><small>BOARD</small></div>' +
+        '<div class="v9rel" data-act="cbgo" data-v="board"><div class="v9f">' + H.face({ id: 31, n: 'c', nat: 'England', a: 50 }, 78, '#d8dde5') + '</div><i>' + fans + '</i><small>FANS</small></div>' +
+        '<div class="v9rel" data-act="tab" data-v="squad"><div class="v9f">' + (star ? pface(star, 78) : '') + '</div><i>' + mood + '</i><small>SQUAD MOOD</small></div></div></div>';
+      var yth = cards.filter(function (p) { return p.a <= 21; }).sort(function (a, b) { return b.p - a.p; }).slice(0, 6);
+      if (yth.length) {
+        h += '<div class="v9card"><div class="v9ttl"><b>🌱 YOUNG TALENTS</b><em>rating → potential</em></div>';
+        yth.forEach(function (p) { h += '<div class="v9yp" data-act="pl" data-id="' + p.id + '"><div class="v9f sm">' + pface(p, 38) + '</div><div class="sp"><b>' + esc(p.n) + '</b><small>' + p.pos + ' · ' + p.a + ' years</small></div><em>' + p.o + ' → ' + p.p + '</em></div>'; });
+        h += '</div>';
+      }
+      GROUPS.forEach(function (gr) {
+        h += '<div class="v9grp">' + gr[0] + '</div><div class="v9grid">';
+        gr[1].forEach(function (t) { h += '<button class="v9t' + (gr[0].indexOf('GAME') >= 0 ? ' g' : '') + (t[3] ? ' ' + t[3] : '') + '" ' + t[2] + '><span>' + t[0] + '</span>' + t[1] + '</button>'; });
+        h += '</div>';
+      });
+      h += '<div class="v9cl"><button data-v9="classic">Use the classic menu instead</button></div></div>';
+      return h;
+    }
+    function sig(g) {
+      var s = g.S, uc = H.userClub(g), v5 = s.v5 || {};
+      var busy = document.querySelector('.v3bg,.v4bg,.v5bg,.v6bg,.v7bg,.v8bg,.v9bg,#layer .sheetbg,#layer .full-l') ? 1 : 0;
+      return [uc.name, Math.round(uc.cash * 100), s.week, s.year, uc.fac.join(','), Math.round(s.mgr.rep), Math.round(s.board.conf), s.sponsor ? s.sponsor.name : '', H.userCards(g).length, H.userEval(g).vector.rating, Object.keys(v5.cp || {}).length, Object.keys(v5.cn || {}).length, JSON.stringify(v5.club || {}).length, busy].join('|');
+    }
+    function injectHub(scr, g, sg) {
+      var tmp = document.createElement('div'); tmp.innerHTML = hubHTML(g);
+      var el = tmp.firstChild; el.dataset.sig = sg;
+      var old = scr.querySelector('.v9hub');
+      if (old) old.replaceWith(el); else { var t = scr.querySelector('.tabs2'); if (t) t.after(el); else scr.prepend(el); }
+    }
+
+    /* =====================================================================
+       3. SELL PLAYERS: choose how many, who, and the price
+       ===================================================================== */
+    var MODES = [['surplus', 'Surplus'], ['weak', 'Lowest rated'], ['old', 'Oldest'], ['wage', 'Top earners'], ['value', 'Most valuable']];
+    var MULTS = [[0.8, 'Quick sale · 80%'], [1, 'Market value · 100%'], [1.2, 'Ask more · 120%']];
+    var sell = { n: 1, mode: 'surplus', mult: 1, picked: {}, step: 1, quotes: [], out: null };
+    function squad() { return H.userCards(G()); }
+    function maxSell() { return Math.max(0, squad().length - 18); }
+    function inSets() {
+      var s = S(), xi = {}, bn = {};
+      (s.slots || []).forEach(function (id) { if (id) xi[id] = 1; }); (s.bench || []).forEach(function (id) { bn[id] = 1; });
+      return { xi: xi, bn: bn };
+    }
+    function ordered(mode) {
+      var q = inSets(), use = function (p) { return p.o + Math.max(0, (p.p || p.o) - p.o) * 0.4; };
+      var f = {
+        surplus: function (a, b) { var ra = q.xi[a.id] ? 2 : q.bn[a.id] ? 1 : 0, rb = q.xi[b.id] ? 2 : q.bn[b.id] ? 1 : 0; return (ra - rb) || (use(a) - use(b)); },
+        weak: function (a, b) { return (a.o - b.o) || (a.v - b.v); },
+        old: function (a, b) { return (b.a - a.a) || (a.o - b.o); },
+        wage: function (a, b) { return (b.w - a.w) || (a.o - b.o); },
+        value: function (a, b) { return b.v - a.v; }
+      }[mode] || function (a, b) { return a.o - b.o; };
+      return squad().slice().sort(f);
+    }
+    function repick() {
+      var n = Math.max(0, Math.min(sell.n, maxSell())); sell.n = n; sell.picked = {};
+      ordered(sell.mode).slice(0, n).forEach(function (p) { sell.picked[p.id] = 1; });
+    }
+    function pickedList() { return squad().filter(function (p) { return sell.picked[p.id]; }); }
+    function sellOpen() { sell = { n: Math.min(3, maxSell()) || 0, mode: 'surplus', mult: 1, picked: {}, step: 1, quotes: [], out: null }; repick(); sellBox(); }
+    function sellBox(keep) {
+      var g = G(), s = S(), cards = squad(), mx = maxSell(), open = H.windowOpen(g), pl = pickedList(), est = 0, q = inSets();
+      if (sell.step === 2) return quoteBox();
+      if (sell.step === 3) return doneBox();
+      pl.forEach(function (p) { est += p.v * sell.mult; });
+      var nXI = pl.filter(function (p) { return q.xi[p.id]; }).length;
+      var h = '<div class="v9hd2"><h3>💷 Sell players</h3><button class="v9x" data-v9="x">✕</button></div><div class="v9st">Squad: <b>' + cards.length + '</b> players · you can sell up to <b>' + mx + '</b> (the minimum is 18)<br>Transfer window: <b style="color:' + (open ? '#6ee08a' : '#ff8a8a') + '">' + (open ? 'OPEN' : 'CLOSED') + '</b>' + (open ? '' : ' (opens in weeks 1 to 4 and 20 to 24)') + '</div>';
+      if (!mx) return box(h + '<div class="v9warn">You only have 18 players, which is the minimum. Sign someone first, then you can sell.</div>' + btn('x', 'Close', 'g'));
+      h += '<div class="v9lbl">HOW MANY PLAYERS?</div><div class="v9step"><button data-v9="nm">−</button><b>' + sell.n + '<small>of ' + mx + ' possible</small></b><button data-v9="np">+</button></div>';
+      h += '<div class="v9lbl">WHO SHOULD GO? (or tap players yourself)</div><div class="v9chips">' + MODES.map(function (m) { return '<button data-v9="mode" data-k="' + m[0] + '" class="' + (sell.mode === m[0] ? 'on' : '') + '">' + m[1] + '</button>'; }).join('') + '</div>';
+      h += '<div class="v9lbl">PRICE</div><div class="v9chips">' + MULTS.map(function (m) { return '<button data-v9="mult" data-k="' + m[0] + '" class="' + (sell.mult === m[0] ? 'on' : '') + '">' + m[1] + '</button>'; }).join('') + '</div>';
+      if (sell.mult > 1.05) h += '<div class="v9st" style="font-size:12px">Asking more means some clubs may not bite. Quick sale almost always finds a buyer.</div>';
+      h += '<div class="v9lbl">YOUR PLAYERS (tap to select or unselect)</div>';
+      ordered(sell.mode).forEach(function (p) {
+        var on = sell.picked[p.id];
+        h += '<div class="v9sr ' + (on ? 'on' : '') + '" data-v9="tg" data-k="' + p.id + '"><i class="v9ck">✓</i><div class="v9f sm">' + pface(p, 38) + '</div><div class="v9sm"><b>' + esc(p.n) + (q.xi[p.id] ? '<span class="v9tg">XI</span>' : q.bn[p.id] ? '<span class="v9tg b">BENCH</span>' : '') + (p.inj ? '<span class="v9tg i">INJ</span>' : '') + '</b><small>' + p.pos + ' · ' + p.a + ' years · ' + fm(p.w) + '/wk · contract ' + Math.max(0, p.ct) + 'y</small></div><div class="v9sv"><b>' + p.o + '</b><small>' + fm(p.v * sell.mult) + '</small></div></div>';
+      });
+      h += '<div class="v9foot">' + (nXI ? '<div class="v9warn s">⚠ ' + nXI + ' of them ' + (nXI === 1 ? 'is' : 'are') + ' in your starting XI.</div>' : '') +
+        '<div style="font-size:13px">Selling <b>' + pl.length + '</b> · about <b>' + fm(est) + '</b> · squad after: <b>' + (cards.length - pl.length) + '</b></div>' +
+        '<div class="v9two">' + btn('list', '📋 List them', 'g', null, !pl.length) + btn('quote', open ? '🔎 SEE OFFERS (' + pl.length + ')' : 'WINDOW CLOSED', '', null, !pl.length || !open) + '</div></div>';
+      box(h, keep);
+    }
+    function makeQuotes() {
+      var g = G(), s = S(), used = {}, out = [];
+      pickedList().forEach(function (p) {
+        var chance = sell.mult <= 0.85 ? 1 : sell.mult <= 1.05 ? 0.9 : 0.6;
+        if (p.a >= 32) chance -= 0.1; if (p.o >= 85) chance += 0.05; chance = Math.max(0.15, Math.min(1, chance));
+        var fee = p.v * sell.mult * (0.96 + rnd() * 0.08), qt = { pid: p.id, to: null, fee: fee, note: '' };
+        if (rnd() <= chance) {
+          var afford = function (b) { return b.id !== s.uid && (b.cash - (used[b.id] || 0)) >= fee; };
+          var c = s.clubs.filter(function (b) { return afford(b) && g.SQ[b.id].length < 33 && b.rep >= p.o * 0.7 - 10; });
+          if (!c.length) c = s.clubs.filter(afford);
+          if (c.length) { var b = c[Math.floor(rnd() * c.length)]; qt.to = b.id; used[b.id] = (used[b.id] || 0) + fee; }
+          else qt.note = 'no club can afford him';
+        } else qt.note = 'no club is interested at this price';
+        out.push(qt);
+      });
+      sell.quotes = out;
+    }
+    function quoteBox() {
+      var g = G(), s = S(), ok = sell.quotes.filter(function (x) { return x.to != null; }), tot = 0;
+      ok.forEach(function (x) { tot += x.fee; });
+      var h = '<div class="v9hd2"><h3>💷 Offers</h3><button class="v9x" data-v9="x">✕</button></div><div class="v9st">' + ok.length + ' of ' + sell.quotes.length + ' players have a buyer. Nothing is sold until you confirm.</div>';
+      sell.quotes.forEach(function (x) {
+        var p = g.P[x.pid]; if (!p) return;
+        h += '<div class="v9q ' + (x.to == null ? 'no' : '') + '"><div class="v9f sm">' + pface(p, 38) + '</div><div class="v9sm"><b>' + esc(p.n) + '</b><small>' + (x.to != null ? '➜ ' + esc(s.clubs[x.to].name) : esc(x.note)) + '</small></div><div class="v9sv"><b>' + (x.to != null ? fm(x.fee) : 'No offer') + '</b><small>value ' + fm(p.v) + '</small></div></div>';
+      });
+      h += '<div class="v9foot"><div style="font-size:13px">Total: <b>' + fm(tot) + '</b> · squad after: <b>' + (squad().length - ok.length) + '</b></div>' +
+        btn('confirm', '✅ CONFIRM SALE OF ' + ok.length + (ok.length === 1 ? ' PLAYER' : ' PLAYERS'), '', null, !ok.length) + '<div class="v9two" style="grid-template-columns:1fr 1fr">' + btn('requote', '🔁 Ask again', 'g') + btn('back', '← Change', 'g') + '</div></div>';
+      box(h);
+    }
+    function confirmSale() {
+      var g = G(), s = S(), done = [], fail = [];
+      if (!H.windowOpen(g)) return toast('The transfer window is closed');
+      sell.quotes.forEach(function (x) {
+        if (x.to == null) { fail.push(x); return; }
+        var b = s.clubs[x.to];
+        if (!g.P[x.pid] || g.P[x.pid].cl !== s.uid) { x.note = 'no longer your player'; fail.push(x); return; }
+        if (b.cash < x.fee) { x.note = 'the club ran out of money'; fail.push(x); return; }
+        var er = H.sellPlayer(g, x.pid, x.fee, x.to);
+        if (er) { x.note = er; fail.push(x); } else done.push(x);
+      });
+      s.offers = (s.offers || []).filter(function (o) { return g.P[o.pid] && g.P[o.pid].cl === s.uid; });
+      save(); sell.out = { done: done, fail: fail }; sell.step = 3; doneBox(); refresh();
+    }
+    function doneBox() {
+      var g = G(), s = S(), o = sell.out || { done: [], fail: [] }, tot = 0;
+      o.done.forEach(function (x) { tot += x.fee; });
+      var h = '<h3>✅ Sale complete</h3><div class="v9st">Sold <b>' + o.done.length + '</b> player' + (o.done.length === 1 ? '' : 's') + ' for <b>' + fm(tot) + '</b>. Your squad now has <b>' + squad().length + '</b> players.</div>';
+      o.done.forEach(function (x) { var p = g.P[x.pid]; if (p) h += '<div class="v9q"><div class="v9f sm">' + pface(p, 38) + '</div><div class="v9sm"><b>' + esc(p.n) + '</b><small>➜ ' + esc(s.clubs[x.to].name) + '</small></div><div class="v9sv"><b>' + fm(x.fee) + '</b></div></div>'; });
+      if (o.fail.length) { h += '<div class="v9lbl">NOT SOLD</div>'; o.fail.forEach(function (x) { var p = g.P[x.pid]; if (p) h += '<div class="v9q no"><div class="v9f sm">' + pface(p, 38) + '</div><div class="v9sm"><b>' + esc(p.n) + '</b><small>' + esc(x.note || 'no offer') + '</small></div></div>'; }); }
+      box(h + btn('x', 'Close') + (o.fail.length ? btn('again', 'Sell more players', 'g') : ''));
+    }
+
+    /* =====================================================================
+       4. TEAM OF THE WEEK (best XI of the last matchday in your league)
+       ===================================================================== */
+    var snap = null;
+    function mkSnap(g, w, partial) {
+      var d = {}; g.S.players.forEach(function (p) { d[p.id] = [p.g || 0, p.as || 0, p.rs || 0, p.rn || 0, p.ap || 0]; });
+      return { y: g.S.year, w: w, partial: !!partial, d: d };
+    }
+    function arrange(items, want) {
+      var out = new Array(want.length), left = items.slice();
+      want.forEach(function (w, i) { for (var j = 0; j < left.length; j++) if (left[j].p.pos === w) { out[i] = left[j]; left.splice(j, 1); break; } });
+      for (var i = 0; i < out.length; i++) if (!out[i]) out[i] = left.shift();
+      return out;
+    }
+    function computeTotw(g, sn, fw) {
+      var s = g.S, uc = H.userClub(g), lg = uc.lg, L = s.lg[lg], rd = L && L.rounds[fw - 1]; if (!rd) return null;
+      var res = {}, bestM = null;
+      rd.forEach(function (f) {
+        if (f[2] < 0) return; res[f[0]] = { gf: f[2], ga: f[3] }; res[f[1]] = { gf: f[3], ga: f[2] };
+        if (f[2] !== f[3]) { var sc = Math.abs(f[2] - f[3]) * 10 + f[2] + f[3]; if (!bestM || sc > bestM.sc) bestM = { cid: f[2] > f[3] ? f[0] : f[1], sc: sc }; }
+      });
+      var list = [];
+      s.players.forEach(function (p) {
+        if (p.cl == null || p.del) return; var c = s.clubs[p.cl]; if (!c || c.lg !== lg) return;
+        var o = sn.d[p.id] || [0, 0, 0, 0, 0], dap = (p.ap || 0) - o[4]; if (dap <= 0) return;
+        var dg = (p.g || 0) - o[0], da = (p.as || 0) - o[1], drs = (p.rs || 0) - o[2], drn = (p.rn || 0) - o[3];
+        var r = res[p.cl] || { gf: 0, ga: 1 }, grp = H.GROUP[p.pos];
+        var sc = dg * 4 + da * 2.5 + p.o * 0.06 + (r.gf > r.ga ? 1.2 : r.gf === r.ga ? 0.2 : 0);
+        if (drn > 0) sc += (drs / drn - 6.2) * 2.2;
+        if (r.ga === 0) sc += grp === 'G' ? 3 : grp === 'D' ? 2 : grp === 'M' ? 0.6 : 0;
+        list.push({ p: p, sc: sc, grp: grp, g: dg, a: da });
+      });
+      var top = function (grp, n) { return list.filter(function (x) { return x.grp === grp; }).sort(function (a, b) { return b.sc - a.sc; }).slice(0, n); };
+      var gk = top('G', 1), df = top('D', 4), md = top('M', 3), at = top('A', 3);
+      if (gk.length < 1 || df.length < 4 || md.length < 3 || at.length < 3) return null;
+      var xi = [].concat(arrange(at, ['LW', 'ST', 'RW']), arrange(md, ['LM', 'CM', 'RM']), arrange(df, ['LB', 'CB', 'CB', 'RB']), gk);
+      var used = {}; xi.forEach(function (x) { used[x.p.id] = 1; });
+      var bn = list.filter(function (x) { return !used[x.p.id]; }).sort(function (a, b) { return b.sc - a.sc; }).slice(0, 5);
+      var rec = function (x) { return { id: x.p.id, n: x.p.n, pos: x.p.pos, cl: x.p.cl, o: x.p.o, g: x.g, a: x.a }; };
+      return { w: fw, y: s.year, lg: lg, mgr: bestM ? bestM.cid : null, xi: xi.map(rec), bn: bn.map(rec) };
+    }
+    var oldStart = H.afterStart;
+    H.afterStart = function (g) { var r; if (oldStart) r = oldStart.apply(this, arguments); try { snap = mkSnap(g, 1, false); } catch (e) {} return r; };
+    var oldWeek = H.afterWeek;
+    H.afterWeek = function (g) {
+      var r; if (oldWeek) r = oldWeek.apply(this, arguments);
+      try {
+        var s = g.S, fw = s.week - 1;
+        if (snap && !snap.partial && snap.y === s.year && snap.w === fw && fw >= 1) { var t = computeTotw(g, snap, fw); if (t) { s.v9 = s.v9 || {}; s.v9.totw = t; } }
+        snap = mkSnap(g, s.week, false);
+      } catch (e) { if (window.console) console.error('HANS FC 3.6 team of the week', e); }
+      return r;
+    };
+    var SLOTS = [[18, 17], [50, 11], [82, 17], [22, 42], [50, 46], [78, 42], [14, 68], [38, 71], [62, 71], [86, 68], [50, 90]];
+    function ppHTML(r, x, y) {
+      var g = G(), s = S(), p = g.P[r.id] || { id: r.id, n: r.n, nat: 'England', a: 25, pos: r.pos, cl: r.cl }, c = s.clubs[r.cl];
+      var mk = (r.g ? '<em>⚽' + (r.g > 1 ? r.g : '') + '</em>' : '');
+      return '<div class="v9pp"' + (x != null ? ' style="left:' + x + '%;top:' + y + '%"' : '') + '><div class="v9f md">' + pface(p, 56) + '</div>' + mk + '<div class="v9pn"><b>' + esc(short(r.n)) + '</b><small>' + esc(c ? c.name : '') + '</small></div></div>';
+    }
+    function totwBox() {
+      var g = G(), s = S(), t = V().totw;
+      if (!t || t.y !== s.year) return box('<h3>⭐ Team of the Week</h3><div class="v9st">The first Team of the Week appears once a matchday has been played and you move on to the next week.</div>' + btn('x', 'Close', 'g'));
+      var lg = H.lgOf(t.lg), h = '<div class="v9hd2" style="margin-bottom:6px"><div class="v9th" style="flex:1;margin:0"><b>TEAM OF THE WEEK</b><small>' + esc(lg ? lg.name : '') + ' · Matchday ' + t.w + '</small></div><button class="v9x" data-v9="x">✕</button></div>';
+      var mc = t.mgr != null ? s.clubs[t.mgr] : null, cm = mc ? coach(mc, 0) : null;
+      if (mc) h += '<div class="v9pm">' + (cm ? '<div class="v9f">' + H.face(cm.fp, 46, mc.col) + '</div>' : '') + '<div><small>MANAGER OF THE WEEK</small><b>' + esc(cm ? cm.m.n : 'Manager') + '</b><span>' + esc(mc.name) + '</span></div></div>';
+      h += '<div class="v9pitch">';
+      t.xi.forEach(function (r, i) { h += ppHTML(r, SLOTS[i][0], SLOTS[i][1]); });
+      h += '</div><div class="v9lbl">SUBSTITUTES</div><div class="v9subs">' + t.bn.map(function (r) { return ppHTML(r); }).join('') + '</div>' + btn('x', 'Close', 'g');
+      box(h);
+    }
+
+    /* =====================================================================
+       5. CLICKS, PATCHES AND START-UP
+       ===================================================================== */
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-v9]'); if (!b || !G()) return;
+      var q = b.dataset.v9, k = b.dataset.k;
+      try {
+        if (q === 'x') shut();
+        else if (q === 'sell') sellOpen();
+        else if (q === 'again') sellOpen();
+        else if (q === 'nm') { sell.n = Math.max(1, sell.n - 1); repick(); sellBox(true); }
+        else if (q === 'np') { sell.n = Math.min(maxSell(), sell.n + 1); repick(); sellBox(true); }
+        else if (q === 'mode') { sell.mode = k; repick(); sellBox(true); }
+        else if (q === 'mult') { sell.mult = parseFloat(k); sellBox(true); }
+        else if (q === 'tg') {
+          var id = +k;
+          if (sell.picked[id]) delete sell.picked[id];
+          else if (Object.keys(sell.picked).length >= maxSell()) return toast('You must keep at least 18 players');
+          else sell.picked[id] = 1;
+          sell.n = Object.keys(sell.picked).length; sellBox(true);
+        }
+        else if (q === 'quote' || q === 'requote') { makeQuotes(); sell.step = 2; quoteBox(); }
+        else if (q === 'back') { sell.step = 1; sellBox(); }
+        else if (q === 'confirm') confirmSale();
+        else if (q === 'list') { var n = 0; pickedList().forEach(function (p) { p.lst = true; n++; }); save(); toast(n + ' player' + (n === 1 ? '' : 's') + ' listed. Offers will come.'); shut(); refresh(); }
+        else if (q === 'totw') totwBox();
+        else if (q === 'classic') { setClassic(true); var sc = $('#screen'); if (sc) { sc.classList.remove('v9on'); var hb = sc.querySelector('.v9hub'); if (hb) hb.remove(); } patch(); }
+        else if (q === 'newhub') { setClassic(false); patch(); }
+      } catch (er) { if (window.console) console.error('HANS FC 3.6 click', er); }
+    });
+    function patch() {
+      try {
+        var g = G(), s = S(); if (!g || !s) return; var scr = $('#screen'); if (!scr) return;
+        var strip = scr.querySelector('.strip b'), t1 = scr.querySelector('.tabs2');
+        if (strip && strip.textContent === 'TRANSFERS' && t1 && !scr.querySelector('.v9bar')) t1.insertAdjacentHTML('afterend', '<div class="v9bar"><button data-v9="sell">💷 SELL PLAYERS · choose how many</button></div>');
+        else if (!strip && t1 && scr.querySelector('[data-act="csec"]') && !scr.querySelector('.v9bar')) t1.insertAdjacentHTML('afterend', '<div class="v9bar"><button data-v9="totw">⭐ TEAM OF THE WEEK</button></div>');
+        var game = scr.querySelector('[data-act="renclub"]');
+        if (game) {
+          if (classic()) {
+            scr.classList.remove('v9on'); var h0 = scr.querySelector('.v9hub'); if (h0) h0.remove();
+            if (!scr.querySelector('.v9cl') && t1) t1.insertAdjacentHTML('afterend', '<div class="v9cl"><button data-v9="newhub">✨ Use the new club hub</button></div>');
+          } else {
+            var c0 = scr.querySelector('.v9cl'); if (c0 && !scr.querySelector('.v9hub .v9cl')) c0.remove();
+            var hub = scr.querySelector('.v9hub'), sg = sig(g);
+            if (!hub || hub.dataset.sig !== sg) injectHub(scr, g, sg);
+            scr.classList.add('v9on');
+          }
+        } else scr.classList.remove('v9on');
+      } catch (e) { if (window.console) console.error('HANS FC 3.6 patch', e); }
+    }
+    var scr0 = document.getElementById('screen');
+    if (scr0) new MutationObserver(function () { patch(); }).observe(scr0, { childList: true });
+    setInterval(function () {
+      try {
+        patch();
+        var s = S(); if (s && !snap && s.stage === 'week' && s.week >= 1) snap = mkSnap(G(), s.week, true);
+        if (s && !localStorage.getItem(SEEN) && !ov && !document.querySelector('.v3bg,.v4bg,.v5bg,.v6bg,.v7bg,.v8bg,#layer .full-l')) {
+          localStorage.setItem(SEEN, '1');
+          box('<h3>HANS FC ' + VER + '</h3><ul style="padding-left:18px;margin:0"><li><b>New club hub</b> on Menu, Settings and More: club rating, stadium, coach pictures, facility bars, relationships and tidy button groups</li><li><b>Sell players</b> in Transfers: choose how many, who, and at what price</li><li><b>Team of the Week</b> for your league, with the manager of the week</li></ul><p style="font-size:12px;color:#9fb9dc">You can switch back to the classic menu at the bottom of the hub.</p>' + btn('x', 'Close'));
+        }
+      } catch (e) {}
+    }, 1500);
+    var ob = window.__back; window.__back = function () { if (ov) { shut(); return true; } return ob ? ob() : false; };
+    window.__hfcV9 = { hubHTML: hubHTML, ratings: ratings, coach: coach, ordered: ordered, repick: repick, makeQuotes: makeQuotes, confirmSale: confirmSale, computeTotw: computeTotw, mkSnap: mkSnap, sell: function () { return sell; }, setSell: function (o) { for (var k in o) sell[k] = o[k]; }, ver: VER };
+  } catch (err) { if (window.console) console.error('HANS FC 3.6 add-on failed', err); }
 })();
+
 
 
 

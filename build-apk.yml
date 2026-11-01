@@ -30,11 +30,13 @@ jobs:
           mkdir -p $W $J $R/drawable $R/mipmap-anydpi-v26 $R/values
           [ -f app-build.gradle ] && cp app-build.gradle app/build.gradle
           [ -f AndroidManifest.xml ] && cp AndroidManifest.xml app/src/main/AndroidManifest.xml
-          for f in index.html style.css app.js art.js data.js engine.js extras.js world.js online.js; do [ -f $f ] && cp $f $W/$f; done
-          # Online League add-on: load online.js last, once
-          if [ -f online.js ] && ! grep -q 'online.js' $W/index.html; then
-            if grep -q '</body>' $W/index.html; then sed -i 's#</body>#<script src="online.js"></script></body>#' $W/index.html; else echo '<script src="online.js"></script>' >> $W/index.html; fi
-          fi
+          for f in index.html style.css app.js art.js data.js engine.js extras.js world.js online.js hansfc-plus.js; do [ -f $f ] && cp $f $W/$f; done
+          # add-ons (Online League, Plus): load them last, once each
+          for A in online.js hansfc-plus.js; do
+            if [ -f $A ] && ! grep -q "$A" $W/index.html; then
+              if grep -q '</body>' $W/index.html; then sed -i "s#</body>#<script src=\"$A\"></script></body>#" $W/index.html; else echo "<script src=\"$A\"></script>" >> $W/index.html; fi
+            fi
+          done
           [ -f MainActivity.java ] && cp MainActivity.java $J/MainActivity.java
           [ -f ic_fg.xml ] && cp ic_fg.xml $R/drawable/ic_fg.xml
           [ -f ic_launcher.xml ] && cp ic_launcher.xml $R/mipmap-anydpi-v26/ic_launcher.xml

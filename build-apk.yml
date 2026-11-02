@@ -43,6 +43,26 @@ jobs:
           for f in colors.xml styles.xml; do [ -f $f ] && cp $f $R/values/$f; done
           find app -type f
 
+      - name: Use one fixed signing key (so a new APK installs over the old app)
+        run: |
+          set -e
+          mkdir -p ~/.android
+          if [ ! -f hansfc-debug.keystore ]; then
+            keytool -genkeypair -keystore hansfc-debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 36500 -dname "CN=HANS FC,O=HANS FC,C=GH"
+            git config user.name "github-actions"
+            git config user.email "actions@users.noreply.github.com"
+            git add hansfc-debug.keystore
+            git commit -m "Add fixed signing key for HANS FC"
+            git push origin HEAD
+          fi
+          cp hansfc-debug.keystore ~/.android/debug.keystore
+
+      - name: Raise the version number on every build
+        run: |
+          set -e
+          sed -i -E "s/versionCode[ =]+[0-9]+/versionCode $((100 + ${{ github.run_number }}))/" app/build.gradle
+          grep -n "versionCode\|versionName" app/build.gradle || true
+
       - name: Build APK
         run: gradle assembleDebug --no-daemon
 

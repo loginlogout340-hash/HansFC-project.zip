@@ -30,12 +30,38 @@ jobs:
           mkdir -p $W $J $R/drawable $R/mipmap-anydpi-v26 $R/values
           [ -f app-build.gradle ] && cp app-build.gradle app/build.gradle
           [ -f AndroidManifest.xml ] && cp AndroidManifest.xml app/src/main/AndroidManifest.xml
-          for f in index.html style.css app.js art.js data.js engine.js extras.js world.js; do [ -f $f ] && cp $f $W/$f; done
+          for f in index.html style.css app.js art.js data.js engine.js extras.js world.js online.js hansfc-plus.js; do [ -f $f ] && cp $f $W/$f; done
+          # add-ons (Online League, Plus): load them last, once each
+          for A in online.js hansfc-plus.js; do
+            if [ -f $A ] && ! grep -q "$A" $W/index.html; then
+              if grep -q '</body>' $W/index.html; then sed -i "s#</body>#<script src=\"$A\"></script></body>#" $W/index.html; else echo "<script src=\"$A\"></script>" >> $W/index.html; fi
+            fi
+          done
           [ -f MainActivity.java ] && cp MainActivity.java $J/MainActivity.java
           [ -f ic_fg.xml ] && cp ic_fg.xml $R/drawable/ic_fg.xml
           [ -f ic_launcher.xml ] && cp ic_launcher.xml $R/mipmap-anydpi-v26/ic_launcher.xml
           for f in colors.xml styles.xml; do [ -f $f ] && cp $f $R/values/$f; done
           find app -type f
+
+      - name: Use one fixed signing key (so a new APK installs over the old app)
+        run: |
+          set -e
+          mkdir -p ~/.android
+          if [ ! -f hansfc-debug.keystore ]; then
+            keytool -genkeypair -keystore hansfc-debug.keystore -storepass android -keypass android -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 36500 -dname "CN=HANS FC,O=HANS FC,C=GH"
+            git config user.name "github-actions"
+            git config user.email "actions@users.noreply.github.com"
+            git add hansfc-debug.keystore
+            git commit -m "Add fixed signing key for HANS FC"
+            git push origin HEAD
+          fi
+          cp hansfc-debug.keystore ~/.android/debug.keystore
+
+      - name: Raise the version number on every build
+        run: |
+          set -e
+          sed -i -E "s/versionCode[ =]+[0-9]+/versionCode $((100 + ${{ github.run_number }}))/" app/build.gradle
+          grep -n "versionCode\|versionName" app/build.gradle
 
       - name: Add content pack (makes the APK bigger than 40 MB)
         run: |
@@ -55,6 +81,13 @@ jobs:
           S=$(stat -c%s HansFC.apk)
           echo "APK size: $S bytes"
           test "$S" -ge 41943040
+
+      - name: Check the add-ons are inside the APK
+        run: |
+          unzip -p HansFC.apk assets/www/index.html | grep -q 'hansfc-plus.js'
+          unzip -l HansFC.apk | grep -q 'assets/www/hansfc-plus.js'
+          unzip -l HansFC.apk | grep -q 'assets/www/online.js'
+          echo "Add-ons found in the APK"
 
       - uses: actions/upload-artifact@v4
         with:

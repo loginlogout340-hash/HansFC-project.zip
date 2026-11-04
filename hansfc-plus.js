@@ -368,7 +368,7 @@ function cpBuild() {
 }
 function cpCounts() { var g = G(), t = 0, have = 0, miss = 0; if (!g) return { t: 0, have: 0, miss: 0 }; g.S.clubs.forEach(function (c) { if (c.id === g.S.uid) return; t++; var r = cp.cache[c.name]; if (r && r.u) have++; else if (r) miss++; }); return { t: t, have: have, miss: miss }; }
 function cpWork() {
-  if (!cp.run) return; if (!cp.queue.length) { cp.run = false; cp.msg = 'All done'; applyCoaches(); cpPaint(); return; }
+  if (!cp.run) return; if (!cp.queue.length) { cp.run = false; cp.msg = 'All done. Close this screen and open the Coaches screen again to see the pictures.'; applyCoaches(); cpPaint(); return; }
   var club = cp.queue.shift();
   findCoach(club).then(function (r) { r.t = Date.now(); cp.cache[club] = r; cPut(club, r); cp.fails = 0; applyCoaches(); cpPaint(); setTimeout(cpWork, 250); }, function () { cp.fails++; if (cp.fails >= 5) { cp.run = false; cp.msg = 'No internet connection. Try again later.'; cpPaint(); } else { cp.queue.push(club); setTimeout(cpWork, 1500); } });
 }
@@ -486,7 +486,16 @@ new MutationObserver(function () {
   if (b && !b.getAttribute('data-hps') && b.textContent.indexOf('Sponsors hub') >= 0) { b.setAttribute('data-hps', '1'); var pp = b.querySelector('p.v4s'), html = renewHTML(); if (pp) pp.insertAdjacentHTML('afterend', html); else b.insertAdjacentHTML('beforeend', html); }
   var pb = document.querySelector('.v8box');
   if (pb && !pb.getAttribute('data-hpc') && pb.textContent.indexOf('Player pictures') >= 0) { pb.setAttribute('data-hpc', '1'); pb.insertAdjacentHTML('beforeend', cpHTML()); }
+  /* the Coaches screen: add the coach picture download and start it the first time */
+  var kb = document.querySelector('.v5box');
+  if (kb && !kb.getAttribute('data-hpk') && /Assistant manager|Goalkeeping coach/.test(kb.textContent)) {
+    kb.setAttribute('data-hpk', '1');
+    var bs = kb.querySelectorAll('button'), last = bs[bs.length - 1], card = cpHTML();
+    if (last) last.insertAdjacentHTML('beforebegin', card); else kb.insertAdjacentHTML('beforeend', card);
+    cpAuto(0);
+  }
 }).observe(document.body, { childList: true });
+function cpAuto(n) { if (!cp.ready) { if (n < 12) setTimeout(function () { cpAuto(n + 1); }, 600); return; } if (!cp.run && !Object.keys(cp.cache).length) cpStart(); }
 
 /* ---------------------------------------- pop-ups and menu ---------------------------------------- */
 var boxEl = null, hubOpen = false;
